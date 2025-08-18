@@ -1,0 +1,17 @@
+services:
+  bench_python:
+    build: ./python
+    restart: always
+    container_name: bench_python
+    volumes:
+      - ./python/submission:/bench/submission
+      - ./python/data:/bench/data
+    user: "bench:bench"
+    network: python_no_inet
+    environment:
+      BENCH_NAME: ${BENCH_NAME}
+
+networks:
+  python_no_inet:
+    driver: bridge
+    internal: true
