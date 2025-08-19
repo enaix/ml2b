@@ -3,16 +3,43 @@
 import os
 import importlib
 
+from common import report_error, graceful_exit
+
 
 # Getting the benchmark name
 # ==========================
-#   os.env["BENCH_NAME"]
+def get_bench_params() -> dict:
+    comp_id = os.environ.get("COMPETITION_ID")
+    if comp_id is None:
+        common.report_error("Environment variable COMPETITION_ID is unset")
+        common.graceful_exit(1)
+    bench_lang = os.environ.get("BENCH_LANG")
+    if bench_lang is None:
+        bench_lang = "English"
+    return {"comp_id": comp_id, "bench_lang": bench_lang}
 
 
 # Loading the submission code
 # ===========================
-#   mod = importlib.import_module("submission.file")  # loads the file 'file.py'
-#   if not hasattr(mod, 'train_and_predict'):
-#     handle_no_entrypoint()
-#     return
-#   llm_function = mod.train_and_predict
+def load_submission() -> object:
+    try:
+        mod = importlib.import_module("submission.code")  # loads the file 'code.py'
+        if not hasattr(mod, 'train_and_predict'):
+            common.report_error("Submission code does not have the train_and_predict function")
+            common.graceful_exit(1)
+        return mod.train_and_predict
+    except BaseException as e:
+        common.report_error(f"Could not load submission code: {e=}")
+        common.graceful_exit(1)
+
+
+def main():
+    params = get_bench_params()
+    train_and_predict = load_submission()
+
+    results = grade_llm_code(train_and_predict, params["comp_id"], params["bench_lang"])
+
+    common.save_and_exit(results)
+
+if __name__ == "__main__":
+    main()
