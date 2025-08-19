@@ -9,7 +9,8 @@ services:
     user: "bench:bench"
     network: python_no_inet
     environment:
-      BENCH_NAME: ${BENCH_NAME}
+      COMPETITION_NAME: ${COMPETITION_NAME}
+      BENCH_LANG: ${BENCH_LANG}
 
 networks:
   python_no_inet:
