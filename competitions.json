@@ -1,0 +1,183 @@
+{
+    "_comment0": [
+        "--------------------------",
+        "Binary Classification (13)",
+        "--------------------------"
+    ],
+
+    "wids-datathon-2020": {
+        "metric": "roc_auc_score",
+        "target_col": "hospital_death",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "high-frequency-price-prediction": {
+        "metric": "roc_auc_score",
+        "target_col": "y",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "explicit-content-detection": {
+        "metric": "f1_score",
+        "target_col": "target",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "binary predictions (0 or 1)"
+    },
+    "2020-classification-data-challenge": {
+        "metric": "roc_auc_score",
+        "target_col": "Buy",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "tabular-playground-series-mar-2021": {
+        "metric": "roc_auc_score",
+        "target_col": "target",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "uwaterloo-stat441-jewelry": {
+        "metric": "roc_auc_score",
+        "target_col": "Revenue",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "ai-cancer-predictions": {
+        "metric": "accuracy_score",
+        "target_col": "diagnosis",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "binary predictions (0 or 1)"
+    },
+    "eco3119-yonsei-2021": {
+        "metric": "accuracy_score",
+        "target_col": "y",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "binary predictions (0 or 1)"
+    },
+    "porto-seguro-challenge": {
+        "metric": "f1_score",
+        "target_col": "y",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "binary predictions (0 or 1)"
+    },
+    "stroke-prediction-s3e2": {
+        "metric": "roc_auc_score",
+        "target_col": "stroke",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "employee-attrition-s3e3": {
+        "metric": "roc_auc_score",
+        "target_col": "Attrition",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "credit-card-fraud-s3e4": {
+        "metric": "roc_auc_score",
+        "target_col": "Class",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+
+    "_comment1": [
+        "------------------------------",
+        "Multi-Class Classification (4)",
+        "------------------------------"
+    ],
+
+    "multi-class-classification": {
+        "metric": "accuracy_score",
+        "target_col": "Class",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "class labels (integers 0-5)"
+    },
+    "megafon-accelerator": {
+        "metric": "f1_score_avg_macro",
+        "target_col": "TARGET",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "class labels (integers 0, 1, or 2)"
+    },
+    "syde-522-winter-2021": {
+        "metric": "accuracy_score",
+        "target_col": "label",
+        "direction": "maximize",
+        "cv_folds": 5,
+        "output_hint": "class labels (integers)"
+    },
+    "tabular-playground-may-2021": {
+        "metric": "log_loss",
+        "target_col": "target",
+        "direction": "minimize",
+        "cv_folds": 5,
+        "output_hint": "probabilities for all classes (N x K matrix, floats in [0, 1])"
+    },
+
+    "_comment2": [
+        "--------------",
+        "Regression (7)",
+        "--------------"
+    ],
+
+    "ieor-242-nyc-taxi": {
+        "metric": "root_mean_squared_error",
+        "target_col": "duration",
+        "direction": "minimize",
+        "cv_folds": 5,
+        "output_hint": "predicted durations (floats >= 0)"
+    },
+    "financial-engineering-1": {
+        "metric": "mean_squared_error",
+        "target_col": "col_5",
+        "direction": "minimize",
+        "cv_folds": 5,
+        "output_hint": "predicted values for col_5 (floats)"
+    },
+    "actuarial-loss-prediction": {
+        "metric": "root_mean_squared_error",
+        "target_col": "UltimateIncurredClaimCost",
+        "direction": "minimize",
+        "cv_folds": 5,
+        "output_hint": "predicted total claims payments (floats >= 0)"
+    },
+    "she-hacks-2021": {
+        "metric": "root_mean_squared_error",
+        "target_col": "Unique Headcount",
+        "direction": "minimize",
+        "cv_folds": 5,
+        "output_hint": "integer counts >= 0"
+    },
+    "google-brain-ventilator": {
+        "metric": "mean_absolute_error",
+        "target_col": "pressure",
+        "direction": "minimize",
+        "cv_folds": 5,
+        "output_hint": "predicted pressure values (floats, in cmH2O)"
+    },
+    "crime-learn": {
+        "metric": "root_mean_squared_error",
+        "target_col": "ViolentCrimesPerPop",
+        "direction": "minimize",
+        "cv_folds": 5,
+        "output_hint": "predicted crime rates (floats >= 0)"
+    },
+    "california-housing-s3e1": {
+        "metric": "root_mean_squared_error",
+        "target_col": "MedHouseVal",
+        "direction": "minimize",
+        "cv_folds": 5,
+        "output_hint": "predicted house values (floats >= 0)"
+    }
+}

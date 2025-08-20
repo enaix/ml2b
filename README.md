@@ -1,6 +1,14 @@
 Infrastructure code for the machine learning LLM benchmark
 
+## Requirements
+
+- kaggle cli
+
+- Docker with Compose plugin
+
 ## Python
+
+You may run `test_submission.sh` to automatically download and run the dataset
 
 ### Setup
 
@@ -10,11 +18,18 @@ Make sure that submission folder is a Python module:
 
 `echo "" > python/submission/__init__.py`
 
-Put the respecting dataset to the `python/data` directory and the submission file to `python/submission/??.py`
+Copy `competitions.json` to the container:
+
+`cp competitions.json python/data/`
+
+Put the respecting dataset to the `python/data/${COMPETITION_ID}` directory and the submission file to `python/submission/code.py`. You may download the dataset using kaggle cli
+
 
 ### Executing
 
-`export BENCH_NAME=abc`
+`export COMPETITION_ID=abc`
+
+`export BENCH_LANG=English`
 
 Execute the benchmark and put results to `python/submission/results.txt`:
 
