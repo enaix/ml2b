@@ -8,7 +8,7 @@ Infrastructure code for the machine learning LLM benchmark
 
 ## Python
 
-You may run `test_submission.sh` to automatically download and run the dataset
+You may run `test_submission.sh` to automatically download and run the dataset. Note: this script will REMOVE `./python/submission/` directory
 
 ### Setup
 
@@ -18,11 +18,7 @@ Make sure that submission folder is a Python module:
 
 `echo "" > python/submission/__init__.py`
 
-Copy `competitions.json` to the container:
-
-`cp competitions.json python/data/`
-
-Put the respecting dataset to the `python/data/${COMPETITION_ID}` directory and the submission file to `python/submission/code.py`. You may download the dataset using kaggle cli
+Put the respecting dataset to the `competitions/${COMPETITION_ID}` directory and the submission file to `python/submission/code.py`. You may download the dataset using kaggle cli
 
 
 ### Executing

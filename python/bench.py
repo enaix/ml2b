@@ -3,7 +3,8 @@
 import os
 import importlib
 
-from common import report_error, graceful_exit
+import common
+from grader import grade_llm_code
 
 
 # Getting the benchmark name
@@ -39,7 +40,7 @@ def main():
 
     results = grade_llm_code(train_and_predict, params["comp_id"], params["bench_lang"])
 
-    common.save_and_exit(results)
+    common.log_results_and_exit(results)
 
 if __name__ == "__main__":
     main()

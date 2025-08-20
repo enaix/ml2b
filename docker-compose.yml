@@ -5,13 +5,13 @@ services:
     container_name: bench_python
     volumes:
       - ./python/submission:/bench/submission
-      - ./python/data:/bench/data
+      - ./competitions:/bench/data:ro
     user: "bench:bench"
-    network: python_no_inet
+    networks:
+      - python_no_inet
     environment:
-      COMPETITION_NAME: ${COMPETITION_NAME}
+      COMPETITION_ID: ${COMPETITION_ID}
       BENCH_LANG: ${BENCH_LANG}
-
 networks:
   python_no_inet:
     driver: bridge

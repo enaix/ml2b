@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.model_selection import KFold
 import json
 import sys
+import os
 
 from sklearn.metrics import (
     roc_auc_score,
@@ -37,7 +38,7 @@ METRICS = {
 
 def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_and_predict: object, metric: object, comp: dict, scores: list, language: str) -> float:
     kf = KFold(n_splits=comp["cv_folds"])
-    for train_idx, val_idx in kf.split(X):
+    for i, (train_idx, val_idx) in enumerate(kf.split(X)):
         X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
         X_val, y_val = X.iloc[val_idx], y.iloc[val_idx]
         try:
@@ -45,6 +46,7 @@ def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_and_predict: object
             preds = train_and_predict(X_train, y_train, X_val) # Won't the distribution of X_train leak onto X_val?
             score = metric(y_val, preds)
             scores.append(score)
+            print(f"autograde_cvfold() : finished fold {i+1}/{comp['cv_folds']}")
         except Exception as e:
             common.report_error(f"Submission code execution failed : {sys.exc_info()}")
             scores.append(np.nan)  # Mark failed folds
@@ -54,7 +56,7 @@ def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_and_predict: object
     if not valid_scores:
         common.report_error("Submission code failed for all CV folds")
         common.graceful_shutdown(1)
-    return valid_scores.mean()
+    return np.mean(valid_scores)
 
 
 
@@ -92,7 +94,7 @@ def grade_llm_code(train_and_predict: object, competition_id: str, language: str
         train = pd.read_csv(f"data/{competition_id}/train.csv")  # Data should be mounted in this format
         X, y = train.drop(columns=[comp["target_col"]]), train[comp["target_col"]]
     except Exception as e:
-        common.report_error(f"grade_llm_code() : internal error : data loading failed: {e=}")
+        common.report_error(f"grade_llm_code() : internal error : data loading failed: {e=} (file data/{competition_id}/train.csv)")
         common.graceful_exit(1)
 
     scores = []
@@ -108,6 +110,7 @@ def grade_llm_code(train_and_predict: object, competition_id: str, language: str
     common.set_bench_info({"grader": grader})
 
     # Execute the autograder
+    print("grade_llm_code() : executing...")
     score = GRADERS[grader](X, y, train_and_predict, metric, comp, scores, language)
 
     return {

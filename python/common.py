@@ -12,9 +12,9 @@ class Results:
     """
     res = {"errors": [], "success": False}
 
-    def write():
-        with open("submission/results.json") as f:
-            json.dump(res, f)
+    def write(self):
+        with open("submission/results.json", 'w') as f:
+            json.dump(self.res, f)
 
 bench_results = Results()
 

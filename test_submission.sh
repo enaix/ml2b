@@ -5,13 +5,12 @@ set -e
 # Prepare the folders
 # ===================
 
+if [[ -d "./python/submission" ]]; then
+	rm -r ./python/submission
+fi
+
 mkdir -p ./python/submission/
 mkdir -p ./python/data
-
-rm ./python/submission/*
-rm ./python/submission/.*
-
-cp ./competitions.json ./python/data/
 
 echo "" > ./python/submission/__init__.py
 
@@ -38,10 +37,22 @@ export BENCH_LANG="English"
 
 
 # Download
-mkdir -p competitions
-kaggle competitions download $COMPETITION_ID -p competitions/
-ln -s "$(pwd)/competitions/${COMPETITION_ID}" "$(pwd)/python/data/${COMPETITION_ID}"
+# ========
 
+# QUICK FIX: remove '-' from COMPETITION_ID
+KAGGLE_COMP_ID="widsdatathon2020"
+
+mkdir -p competitions
+mkdir -p competitions/$COMPETITION_ID
+kaggle competitions download $KAGGLE_COMP_ID -p competitions/$COMPETITION_ID
+unzip competitions/$COMPETITION_ID/*.zip -d competitions/$COMPETITION_ID
+
+# QUICK FIX 2: no file 'train.csv', need to rename the file
+mv competitions/$COMPETITION_ID/training_v2.csv competitions/$COMPETITION_ID/train.csv
+
+
+# COMMENT OUT TO SKIP BUILDING THE CONTAINER
+docker compose build bench_python
 
 # Execute
 docker compose run bench_python
