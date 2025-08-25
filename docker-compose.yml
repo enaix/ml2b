@@ -12,6 +12,7 @@ services:
     environment:
       COMPETITION_ID: ${COMPETITION_ID}
       BENCH_LANG: ${BENCH_LANG}
+      BENCH_MODE: ${BENCH_MODE}
 networks:
   python_no_inet:
     driver: bridge
