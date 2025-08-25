@@ -1,25 +1,30 @@
 import os
 import sys
-from enum import Enum
+from enum import Enum, StrEnum
 import weakref
 import traceback
 import json
+import subprocess
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import KFold
 
 
-class Language(Enum):
-    English = 1
+class Language(StrEnum):
+    English = "English"
     # ...
 
 
-class RunnerInput(Enum):
-    DescOnly    = 1  # Runner only takes in competition description
-    DescAndData = 2  # Runner takes in competition description and data
+class RunnerInput(StrEnum):
+    DescOnly    = "DescOnly"     # Runner only takes in competition description
+    DescAndData = "DescAndData"  # Runner takes in competition description and data
 
 
-class RunnerOutput(Enum):
-    CodeOnly    = 1  # Runner returns only the code
-    CodeAndData = 2  # Runner returns both code and data
-    DataOnly    = 3  # Runner returns only the data
+class RunnerOutput(StrEnum):
+    CodeOnly    = "CodeOnly"     # Runner returns only the code
+    CodeAndData = "CodeAndData"  # Runner returns both code and data
+    DataOnly    = "DataOnly"     # Runner returns only the data
 
 
 class Competition:
@@ -77,12 +82,14 @@ class CompetitionData:
 
 
 class BenchPipeline:
-    def __init__(self, base_path: os.path.Path, max_folds: int = 5):
+    def __init__(self, base_path: os.path.Path, max_folds: int = 5, prepare_data: bool = False):
         self.base_path = base_path
         self.max_folds = folds
         self.current_comp = 0
         self.current_fold = 0
         self.competitions = []
+        self.folds = []
+        self.prepare_data = prepare_data
 
     def _load_competitions(self):
         comp_json = os.path.join(self.base_path(), "competitions", "competitions.json")
@@ -98,8 +105,8 @@ class BenchPipeline:
                 continue  # skip comments
 
             # TODO prepare competition csv data
-            competitions.append(Competition(key, weakref.ref(self), value, ))
-        
+            self.competitions.append(Competition(key, weakref.ref(self), value, ))
+
     def base_path(self) -> os.path.Path:
         return self.base_path
 
@@ -119,10 +126,18 @@ class BenchPipeline:
         """
         Get next competition. This function returns competition info
         """
-        pass
+        if self.current_comp_idx >= len(self.competitions):
+            return None
+        comp = self.competitions[self.current_comp_idx]
+        self.current_comp_idx += 1
+        return comp
 
     def next_fold(self, comp: Competition) -> CompetitionData:
-        pass
+        if not self.prepare_data:
+            return None
+
+        # TODO return actual data object
+        return None
 
     def test_submission_code(self, comp: Competition, fold: CompetitionFold, code: str) -> object:
         """
@@ -140,5 +155,35 @@ class BenchPipeline:
         """
         Prepare X_train, y_train and X_val files for each fold
         """
-        # Take the data and do the split
-        pass
+        if not self.prepare_data:
+            return None
+
+        fold_dir = os.path.join(self.base_path(), "competitions", "folds")
+        comp_fold_dir = os.path.join(fold_dir, comp.comp_id)
+        fold_dir.mkdir(exist_ok=True)
+
+        if os.path.exists(comp_fold_dir):
+            os.rmdir(comp_fold_dir)
+        comp_fold_dir.mkdir()
+
+        # Load data
+        try:
+            train = pd.read_csv(os.path.join("data", competition_id, "train.csv"))
+            X, y = train.drop(columns=[comp.metadata["target_col"]]), train[comp.metadata["target_col"]]
+        except Exception as e:
+            print(f"prepare_train_data() : internal error : data loading failed : {e=} for competition {comp.comp_id}")
+            self.shutdown(1)
+
+
+        kf = KFold(n_splits=self.num_folds(comp))
+        for i, (train_idx, val_idx) in enumerate(kf.split(X)):
+            X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+            X_val, y_val = X.iloc[val_idx], y.iloc[val_idx]
+
+            X_train.to_csv(os.path.join(comp_fold_dir, f"X_train_{i}.csv"))
+            y_train.to_csv(os.path.join(comp_fold_dir, f"y_train_{i}.csv"))
+            X_val.to_csv(os.path.join(comp_fold_dir, f"X_val_{i}.csv"))
+            y_val.to_csv(os.path.join(comp_fold_dir, f"y_val_{i}.csv"))
+
+            self.folds[comp.comp_id] = CompetitionData()
+            # TODO finish this
