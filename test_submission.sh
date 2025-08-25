@@ -34,21 +34,30 @@ EOL
 
 export COMPETITION_ID="wids-datathon-2020"
 export BENCH_LANG="English"
+export METHOD="Headless"
 
 
-# Download
-# ========
+# Download (DEAD CODE)
+# ====================
 
 # QUICK FIX: remove '-' from COMPETITION_ID
-KAGGLE_COMP_ID="widsdatathon2020"
+#KAGGLE_COMP_ID="widsdatathon2020"
 
-mkdir -p competitions
-mkdir -p competitions/$COMPETITION_ID
-kaggle competitions download $KAGGLE_COMP_ID -p competitions/$COMPETITION_ID
-unzip competitions/$COMPETITION_ID/*.zip -d competitions/$COMPETITION_ID
+#mkdir -p competitions
+#mkdir -p competitions/$COMPETITION_ID
+#kaggle competitions download $KAGGLE_COMP_ID -p competitions/$COMPETITION_ID
+#unzip competitions/$COMPETITION_ID/*.zip -d competitions/$COMPETITION_ID
 
 # QUICK FIX 2: no file 'train.csv', need to rename the file
-mv competitions/$COMPETITION_ID/training_v2.csv competitions/$COMPETITION_ID/train.csv
+#mv competitions/$COMPETITION_ID/training_v2.csv competitions/$COMPETITION_ID/train.csv
+
+
+# Load the competition
+# ====================
+
+# CODE is downloaded under competitions/data/$COMPETITION_ID by the user
+# the competition folder has train.csv and test.csv
+# Nothing else to do here, everything is loaded
 
 
 # COMMENT OUT TO SKIP BUILDING THE CONTAINER
