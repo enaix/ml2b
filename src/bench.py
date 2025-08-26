@@ -13,13 +13,23 @@ from sklearn.model_selection import KFold
 
 class Language(StrEnum):
     English = "English"
-    # ...
+    Arab = "Arab"
+    Chinese = "Chinese"
+    Italian = "Italian"
+    Kazach = "Kazach"
+    Polish = "Polish"
+    Romanian = "Romanian"
+    Spanish = "Spanish"
+    Turkish = "Turkish"
 
 
 class CodeLanguage(StrEnum):
     Python = "python"
     R = "rlang"
     Julia = "julia"
+
+
+CODEPATHS = {CodeLanguage.Python: "code.py", CodeLanguage.R: None, CodeLanguage.Julia: None}
 
 
 class RunnerInput(StrEnum):
@@ -34,11 +44,11 @@ class RunnerOutput(StrEnum):
 
 
 class Competition:
-    def __init__(self, comp_id: str, bench: weakref.ref, metadata: dict, comp_data: dict):
+    def __init__(self, comp_id: str, bench: weakref.ref, metadata: dict, tasks: dict):
         self.comp_id = comp_id
-        self.comp_path = os.path.join(bench().base_path(), "data", comp_id)
-        self.train_data = os.path.join(self.comp_path, "train.csv")
-        self.test_data = os.path.join(self.comp_path, "test.csv")
+        #self.comp_path = os.path.join(bench().base_path(), "data", comp_id)
+        #self.train_data = os.path.join(self.comp_path, "train.csv")
+        #self.test_data = os.path.join(self.comp_path, "test.csv")
         self.metadata = metadata
         self.bench = bench
 
@@ -51,15 +61,15 @@ class Competition:
             bench().shutdown(1)
 
         # Process languages
-        self.comp_data = comp_data
+        self.tasks = tasks
 
 
     def get_available_languages(self) -> list[Language]:
-        return self.comp_data.keys()
+        return self.tasks.keys()
 
 
     def _get_meta_for_lang(self, lang: Language) -> dict:
-        values = self.comp_data.get(lang)
+        values = self.tasks.get(lang)
         if values is None:
             print(f"Competition : could not find metadata for language {lang}")
             self.bench().shutdown(1)
@@ -109,9 +119,6 @@ class BenchPipeline:
 
     def _initialize_folders(self):
         for lang in CodeLanguage.items():
-            submission_dir = os.path.join(lang, "submission")
-            if os.path.exists(submission_dir):
-                os.rmdir(submission_dir)
 
         folds_dir = os.path.join("competitions", "folds")
         private_dir = os.path.join("competitions", "private")
@@ -120,6 +127,7 @@ class BenchPipeline:
             os.rmdir(folds_dir)
         if os.path.exists(private_dir):
             os.rmdir(private_dir)
+
 
 
     def _load_competitions(self):
@@ -131,11 +139,24 @@ class BenchPipeline:
         with open(comp_json, 'r') as f:
             comp = json.load(f)
 
+        tasks_dir = os.path.join(self.base_path(), "competitions", "tasks")
+        language_files = os.listdir(tasks_dir)
+        languages = []
+
+        for file in language_files:
+            try:
+                languages.append(Language(file.split('.')[0]))
+            except ValueError:
+                print(f"Bad task file {file}: no such language")
+                self.shutdown(1)
+
         for key, value in comp:
             if key.startswith("_"):
                 continue  # skip comments
 
             # TODO prepare competition csv data
+            
+
             self.competitions.append(Competition(key, weakref.ref(self), value, ))
             self.folds[key] = []
             self.prepare_train_data(self.competitions[-1])
@@ -180,24 +201,52 @@ class BenchPipeline:
         return fold
 
 
-    def test_submission_code(self, comp: Competition, code: str) -> object:
+    def test_submission_code(self, comp: Competition, codelang: CodeLanguage, code: str) -> dict:
         """
         Submit the code and return metric
         """
+
+        # Prepare submission dir
+        # ======================
+
+        submission_dir = os.path.join(str(codelang), "submission")
+        if os.path.exists(submission_dir):
+            os.rmdir(submission_dir)
+        os.mkdir(submission_dir)
+
+        if codelang == CodeLanguage.Python:
+            with open(os.path.join(submission_dir, "__init__.py"), 'w') as f:
+                f.write("")
+        
+        with open(os.path.join(submission_dir, CODEPATHS[codelang]), 'w') as f:
+            f.write(code)
+
+
         result = subprocess.run(
-                ["docker", "compose", "run", "bench_python"],
+                ["docker", "compose", "run", str(codelang)],
                 capture_output=True,
                 text=True,
                 timeout=60*60  # 1 hour timeout
             )
         if result.returncode != 0:
-            # ...
+            print(f"{str(codelang)} container execution failed: {result.stderr}")
+            self.shutdown(1)
+
+        results_path = os.path.join(self.base_path(), str(codelang), "submission")
+        if not os.path.exists(results_path):
+            print(f"{str(codelang)} container failed to generate output")
+            return {"errors": [f"Failed to obtain output for {str(codelang)}"], "success": False}
+
+        with open(results_path, 'r') as f:
+            results = json.load(f)
+        return results
 
 
     def test_submission_data(self, comp: Competition, fold: CompetitionFold, data: os.path.Path) -> object:
         """
         Submit the prediction for X_val and return metric
         """
+        # TODO implement this
         pass
 
 
