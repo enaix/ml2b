@@ -12,6 +12,7 @@ class Results:
     """
 
     res = {"errors": [], "success": False}
+    is_in_container = False
 
     def write(self):
         with open("submission/results.json", "w") as f:
@@ -27,6 +28,9 @@ def report_error(err: str):
 
 
 def graceful_exit(status: int):
+    if not bench_results.is_in_container:
+        raise BaseException  # Allow top-level code to catch this
+
     bench_results.res["success"] = status == 0
     bench_results.write()  # write results to file
     sys.exit(status)

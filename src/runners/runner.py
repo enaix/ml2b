@@ -11,6 +11,7 @@ from src.bench import (
 class DockerRunner:
     input_mode: RunnerInput = RunnerInput.DescOnly
     output_mode: RunnerOutput = RunnerOutput.CodeOnly
+    runner_id: str = "test_runner"
 
     def __init__(self):
         pass

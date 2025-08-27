@@ -11,13 +11,17 @@ from grader import grade_llm_code
 # ==========================
 def get_bench_params() -> dict:
     comp_id = os.environ.get("COMPETITION_ID")
-    if comp_id is None:
+    if not comp_id:
         common.report_error("Environment variable COMPETITION_ID is unset")
         common.graceful_exit(1)
     bench_lang = os.environ.get("BENCH_LANG")
-    if bench_lang is None:
+    if not bench_lang:
         bench_lang = "English"
-    return {"comp_id": comp_id, "bench_lang": bench_lang}
+    bench_mode = os.environ.get("BENCH_MODE")
+    if not bench_mode:
+        common.report_error("Environment variable BENCH_MODE is unset")
+        common.graceful_exit(1)
+    return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": bench_mode}
 
 
 # Loading the submission code
@@ -37,6 +41,8 @@ def load_submission() -> object:
 
 
 def main():
+    common.bench_results.is_in_container = True
+
     params = get_bench_params()
     train_and_predict = load_submission()
 
