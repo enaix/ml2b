@@ -111,6 +111,7 @@ class BenchPipeline:
         self.current_fold = 0
         self.competitions = []
         self.folds = []
+        self.languages = []
         self.prepare_data = prepare_data
 
         self._initialize_folders()
@@ -118,8 +119,6 @@ class BenchPipeline:
 
 
     def _initialize_folders(self):
-        for lang in CodeLanguage.items():
-
         folds_dir = os.path.join("competitions", "folds")
         private_dir = os.path.join("competitions", "private")
 
@@ -127,7 +126,6 @@ class BenchPipeline:
             os.rmdir(folds_dir)
         if os.path.exists(private_dir):
             os.rmdir(private_dir)
-
 
 
     def _load_competitions(self):
@@ -141,25 +139,48 @@ class BenchPipeline:
 
         tasks_dir = os.path.join(self.base_path(), "competitions", "tasks")
         language_files = os.listdir(tasks_dir)
-        languages = []
+        self.languages = []
+        tasks = {}
 
         for file in language_files:
             try:
-                languages.append(Language(file.split('.')[0]))
+                lang = Language(file.split('.')[0])
+                self.languages.append(lang)
             except ValueError:
                 print(f"Bad task file {file}: no such language")
                 self.shutdown(1)
+
+            df = pd.read_csv(file)
+            tasks[lang] = df.to_json()
 
         for key, value in comp:
             if key.startswith("_"):
                 continue  # skip comments
 
-            # TODO prepare competition csv data
-            
+            comp_tasks = {}
+            for lang in self.languages:
+                # Try to find the matching competition id
+                if not tasks[lang].get("comp-id"):
+                    print(f"{str(lang)} task descriptions : missing comp-id field")
+                    self.shutdown(1)
 
-            self.competitions.append(Competition(key, weakref.ref(self), value, ))
+                try:
+                    idx = tasks[lang]["comp-id"].index(key)
+                except ValueError:
+                    print(f"! warning: competition id {key} : missing in {str(lang)} task descriptions")
+                    continue
+
+                comp_tasks[lang] = {key : value[idx] for (key, value) in tasks[lang].items()}
+
+            if not comp_tasks:
+                print("   ----")
+                print(f"!  warning: competition id {key} : missing in all task descriptions")
+                continue
+
+            self.competitions.append(Competition(key, weakref.ref(self), value, comp_tasks))
             self.folds[key] = []
-            self.prepare_train_data(self.competitions[-1])
+            # Creation and deletion of training data should be handled from the main loop
+            # self.prepare_train_data(self.competitions[-1])
 
 
     def base_path(self) -> os.path.Path:
@@ -171,6 +192,10 @@ class BenchPipeline:
             print(f"Benchmark stopped with abnormal exit code {exit_code}")
             traceback.print_exc()
         sys.exit(exit_code)
+
+
+    def languages(self) -> list[Language]:
+        return self.languages
 
 
     def total(self) -> int:
@@ -186,14 +211,19 @@ class BenchPipeline:
         Get next competition. This function returns competition info
         """
         if self.current_comp >= len(self.competitions):
+            self.current_comp = 0
             return None
         comp = self.competitions[self.current_comp]
-        self.current_comp_idx += 1
+        self.current_comp += 1
         return comp
 
 
     def next_fold(self, comp: Competition) -> CompetitionData:
+        """
+        Note: this function does not keep track of competition id!
+        """
         if not self.prepare_data or self.current_fold >= self.total_folds(comp):
+            self.current_fold = 0
             return None
 
         fold = self.folds[comp][self.current_fold]
@@ -288,4 +318,17 @@ class BenchPipeline:
             train.to_csv(train_path, index=False)
             X_val.to_csv(x_val_path, index=False)
             y_val.to_csv(y_val_path, index=False)  # this file remains private
-            self.folds[comp.comp_id].append(CompetitionData(train_path, x_val_path))
+            self.folds[comp.comp_id].append(CompetitionData(train_path, x_val_path, i))
+
+
+    def erase_train_data(self, comp: Competition) -> None:
+        """
+        Erase training data which is no longer needed
+        """
+        if not self.prepare_data:
+            return None
+
+        fold_dir = os.path.join(self.base_path(), "competitions", "folds", comp.comp_id)
+        private_dir = os.path.join(self.base_path(), "competitions", "validation", comp.comp_id)
+        os.rmdir(fold_dir)
+        os.rmdir(private_dir)
