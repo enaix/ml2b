@@ -1,3 +1,9 @@
+competitions/data/
+competitions/folds/
+competitions/validation/
+competitions/tasks/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

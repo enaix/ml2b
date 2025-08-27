@@ -9,6 +9,7 @@ import subprocess
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold
+import importlib
 
 
 class Language(StrEnum):
@@ -94,17 +95,17 @@ class CompetitionData:
         self.fold_idx = fold_idx
 
 
-    def get_train(self) -> os.path.Path:
+    def get_train(self) -> os.PathLike:
         return self.train_path
 
 
-    def get_val(self) -> os.path.Path:
+    def get_val(self) -> os.PathLike:
         return self.val_path
 
 
 
 class BenchPipeline:
-    def __init__(self, base_path: os.path.Path, max_folds: int = 5, prepare_data: bool = False):
+    def __init__(self, base_path: os.PathLike, max_folds: int = 5, prepare_data: bool = False):
         self.base_path = base_path
         self.max_folds = folds
         self.current_comp = 0
@@ -112,10 +113,12 @@ class BenchPipeline:
         self.competitions = []
         self.folds = []
         self.languages = []
+        self.grader_module = None
         self.prepare_data = prepare_data
 
         self._initialize_folders()
         self._load_competitions()
+        self._load_graders()
 
 
     def _initialize_folders(self):
@@ -183,7 +186,11 @@ class BenchPipeline:
             # self.prepare_train_data(self.competitions[-1])
 
 
-    def base_path(self) -> os.path.Path:
+    def load_graders(self) -> None:
+        self.grader_module = importlib.import_module(self.base_path(), "python", "grade_functions.py")
+
+
+    def base_path(self) -> os.PathLike:
         return self.base_path
 
 
@@ -231,7 +238,7 @@ class BenchPipeline:
         return fold
 
 
-    def test_submission_code(self, comp: Competition, codelang: CodeLanguage, code: str) -> dict:
+    def test_submission_code(self, comp: Competition, lang: Language, codelang: CodeLanguage, code: str) -> dict:
         """
         Submit the code and return metric
         """
@@ -256,6 +263,7 @@ class BenchPipeline:
                 ["docker", "compose", "run", str(codelang)],
                 capture_output=True,
                 text=True,
+                env={"COMPETITION_ID": comp.comp_id, "BENCH_LANG": str(lang), "BENCH_MODE": str(RunnerOutput.CodeOnly)},
                 timeout=60*60  # 1 hour timeout
             )
         if result.returncode != 0:
@@ -272,12 +280,29 @@ class BenchPipeline:
         return results
 
 
-    def test_submission_data(self, comp: Competition, fold: CompetitionFold, data: os.path.Path) -> object:
+    def test_submission_data(self, comp: Competition, fold: CompetitionFold, lang: Language, codelang: CodeLanguage, data: object) -> dict:
         """
-        Submit the prediction for X_val and return metric
+        Submit the prediction for X_val and return results. These results need to be merged with submission code results
         """
-        # TODO implement this
-        pass
+        val = os.path.join(self.base_path(), "competitions", "validation", comp.comp_id)
+        grader = comp.metadata.get("grader", "default")
+
+        try:
+            score = self.grader_module.GRADERS[grader](data, val, comp.metadata)
+        except Exception as e:
+            err_msg = f"Grader {grader} failed for competition {comp} : {e=}"
+            print(err_msg)
+            return {"manual_submission_score": None, "manual_submission_error": err_msg}
+
+        return {"manual_submission_score": score, "manual_submission_error": None}
+
+
+    def test_submission_data_path(self, comp: Competition, fold: CompetitionFold, lang: Language, codelang: CodeLanguage, path_to_data: os.PathLike) -> object:
+        """
+        Submit the prediction for X_val and return metric. Data is provided as a CSV file
+        """
+        df = pd.read_csv(path_to_data)
+        return self.test_submission_data(self, comp, fold, lang, codelang, df)
 
 
     def prepare_train_data(self, comp: Competition) -> None:
