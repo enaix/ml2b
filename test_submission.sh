@@ -34,7 +34,7 @@ EOL
 
 export COMPETITION_ID="wids-datathon-2020"
 export BENCH_LANG="English"
-export BENCH_MODE="CodeOnly"
+export BENCH_MODE="MONO_PREDICT"
 
 
 # Load the competition

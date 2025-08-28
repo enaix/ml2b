@@ -46,6 +46,11 @@ class RunnerOutput(StrEnum):
     DataOnly    = "DataOnly"     # Runner returns only the data
 
 
+class BenchMode(StrEnum):
+    MonolithicPredict = "MONO_PREDICT"  # Single train_and_predict function
+    ModularPredict = "MODULAR_PREDICT"  # Modular prediction function
+
+
 class Competition:
     def __init__(self, comp_id: str, bench: weakref.ReferenceType, metadata: dict, tasks: dict):
         self.comp_id = comp_id
@@ -266,7 +271,7 @@ class BenchPipeline:
                 ["docker", "compose", "run", str(codelang)],
                 capture_output=True,
                 text=True,
-                env={"COMPETITION_ID": comp.comp_id, "BENCH_LANG": str(lang), "BENCH_MODE": str(RunnerOutput.CodeOnly)},
+                env={"COMPETITION_ID": comp.comp_id, "BENCH_LANG": str(lang), "BENCH_MODE": str(BenchMode.MonolithicPredict)},
                 timeout=60*60  # 1 hour timeout
             )
         if result.returncode != 0:
