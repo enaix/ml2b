@@ -11,6 +11,8 @@ import pandas as pd
 from sklearn.model_selection import KFold
 import importlib
 
+from typing import Any
+
 
 class Language(StrEnum):
     English = "English"
@@ -45,11 +47,11 @@ class RunnerOutput(StrEnum):
 
 
 class Competition:
-    def __init__(self, comp_id: str, bench: weakref.ref, metadata: dict, tasks: dict):
+    def __init__(self, comp_id: str, bench: weakref.ReferenceType, metadata: dict, tasks: dict):
         self.comp_id = comp_id
-        #self.comp_path = os.path.join(bench().base_path(), "data", comp_id)
-        #self.train_data = os.path.join(self.comp_path, "train.csv")
-        #self.test_data = os.path.join(self.comp_path, "test.csv")
+        self.comp_path = os.path.join(bench().base_path(), "data", comp_id)
+        self.train_data = os.path.join(self.comp_path, "train.csv")
+        self.test_data = os.path.join(self.comp_path, "test.csv")
         self.metadata = metadata
         self.bench = bench
 
@@ -66,7 +68,7 @@ class Competition:
 
 
     def get_available_languages(self) -> list[Language]:
-        return self.tasks.keys()
+        return list(self.tasks.keys())
 
 
     def _get_meta_for_lang(self, lang: Language) -> dict:
@@ -74,6 +76,7 @@ class Competition:
         if values is None:
             print(f"Competition : could not find metadata for language {lang}")
             self.bench().shutdown(1)
+        return values
 
 
     def get_description(self, lang: Language) -> dict:
@@ -89,7 +92,7 @@ class Competition:
 
 
 class CompetitionData:
-    def __init__(self, train_path: Path, val_path: Path, fold_idx: int = 0):
+    def __init__(self, train_path: os.PathLike, val_path: os.PathLike, fold_idx: int = 0):
         self.train_path = train_path
         self.val_path = val_path
         self.fold_idx = fold_idx
@@ -105,14 +108,14 @@ class CompetitionData:
 
 
 class BenchPipeline:
-    def __init__(self, base_path: os.PathLike, max_folds: int = 5, prepare_data: bool = False):
-        self.base_path = base_path
-        self.max_folds = folds
+    def __init__(self, basepath: os.PathLike, max_folds: int = 5, prepare_data: bool = False):
+        self.basepath = basepath
+        self.max_folds = max_folds
         self.current_comp = 0
         self.current_fold = 0
-        self.competitions = []
-        self.folds = []
-        self.languages = []
+        self.competitions: list[Competition] = []
+        self.folds: dict[str, list[CompetitionData]] = {}
+        self._languages: list[Language] = []
         self.grader_module = None
         self.prepare_data = prepare_data
 
@@ -121,7 +124,7 @@ class BenchPipeline:
         self._load_graders()
 
 
-    def _initialize_folders(self):
+    def _initialize_folders(self) -> None:
         folds_dir = os.path.join("competitions", "folds")
         private_dir = os.path.join("competitions", "private")
 
@@ -131,7 +134,7 @@ class BenchPipeline:
             os.rmdir(private_dir)
 
 
-    def _load_competitions(self):
+    def _load_competitions(self) -> None:
         comp_json = os.path.join(self.base_path(), "competitions", "competitions.json")
         if not os.path.exists(comp_json):
             print(f"Missing {comp_json} file")
@@ -142,13 +145,13 @@ class BenchPipeline:
 
         tasks_dir = os.path.join(self.base_path(), "competitions", "tasks")
         language_files = os.listdir(tasks_dir)
-        self.languages = []
+        self._languages = []
         tasks = {}
 
         for file in language_files:
             try:
                 lang = Language(file.split('.')[0])
-                self.languages.append(lang)
+                self._languages.append(lang)
             except ValueError:
                 print(f"Bad task file {file}: no such language")
                 self.shutdown(1)
@@ -161,7 +164,7 @@ class BenchPipeline:
                 continue  # skip comments
 
             comp_tasks = {}
-            for lang in self.languages:
+            for lang in self._languages:
                 # Try to find the matching competition id
                 if not tasks[lang].get("comp-id"):
                     print(f"{str(lang)} task descriptions : missing comp-id field")
@@ -186,12 +189,12 @@ class BenchPipeline:
             # self.prepare_train_data(self.competitions[-1])
 
 
-    def load_graders(self) -> None:
-        self.grader_module = importlib.import_module(self.base_path(), "python", "grade_functions.py")
+    def _load_graders(self) -> None:
+        self.grader_module = importlib.import_module(os.path.join(self.base_path(), "python", "grade_functions.py"))
 
 
     def base_path(self) -> os.PathLike:
-        return self.base_path
+        return self.basepath
 
 
     def shutdown(self, exit_code: int):
@@ -202,18 +205,18 @@ class BenchPipeline:
 
 
     def languages(self) -> list[Language]:
-        return self.languages
+        return self._languages
 
 
     def total(self) -> int:
-        return len(competitions)
+        return len(self.competitions)
 
 
     def total_folds(self, comp: Competition) -> int:
         return min(self.max_folds, comp.metadata.get("cv_folds", 1))
 
 
-    def next_competition(self) -> Competition:
+    def next_competition(self) -> Competition | None:
         """
         Get next competition. This function returns competition info
         """
@@ -225,7 +228,7 @@ class BenchPipeline:
         return comp
 
 
-    def next_fold(self, comp: Competition) -> CompetitionData:
+    def next_fold(self, comp: Competition) -> CompetitionData | None:
         """
         Note: this function does not keep track of competition id!
         """
@@ -233,7 +236,7 @@ class BenchPipeline:
             self.current_fold = 0
             return None
 
-        fold = self.folds[comp][self.current_fold]
+        fold = self.folds[comp.comp_id][self.current_fold]
         self.current_fold += 1
         return fold
 
@@ -280,7 +283,7 @@ class BenchPipeline:
         return results
 
 
-    def test_submission_data(self, comp: Competition, fold: CompetitionFold, lang: Language, codelang: CodeLanguage, data: object) -> dict:
+    def test_submission_data(self, comp: Competition, fold: CompetitionData, lang: Language, codelang: CodeLanguage, data: Any) -> dict:
         """
         Submit the prediction for X_val and return results. These results need to be merged with submission code results
         """
@@ -297,12 +300,12 @@ class BenchPipeline:
         return {"manual_submission_score": score, "manual_submission_error": None}
 
 
-    def test_submission_data_path(self, comp: Competition, fold: CompetitionFold, lang: Language, codelang: CodeLanguage, path_to_data: os.PathLike) -> object:
+    def test_submission_data_path(self, comp: Competition, fold: CompetitionData, lang: Language, codelang: CodeLanguage, path_to_data: os.PathLike) -> dict:
         """
         Submit the prediction for X_val and return metric. Data is provided as a CSV file
         """
         df = pd.read_csv(path_to_data)
-        return self.test_submission_data(self, comp, fold, lang, codelang, df)
+        return self.test_submission_data(comp, fold, lang, codelang, df)
 
 
     def prepare_train_data(self, comp: Competition) -> None:
@@ -316,22 +319,25 @@ class BenchPipeline:
         comp_fold_dir = os.path.join(fold_dir, comp.comp_id)
         private_dir = os.path.join(self.base_path(), "competitions", "validation")
         comp_private_dir = os.path.join(private_dir, comp.comp_id)
-        fold_dir.mkdir(exist_ok=True)
-        private_dir.mkdir(exist_ok=True)
 
-        comp_fold_dir.mkdir()
-        comp_private_dir.mkdir()
+        if not os.path.exists(fold_dir):
+            os.mkdir(fold_dir)
+        if not os.path.exists(private_dir):
+            os.mkdir(private_dir)
+
+        os.mkdir(comp_fold_dir)
+        os.mkdir(comp_private_dir)
 
         # Load data
         try:
-            train = pd.read_csv(os.path.join("data", competition_id, "train.csv"))
+            train = pd.read_csv(os.path.join("data", comp.comp_id, "train.csv"))
             X, y = train.drop(columns=[comp.metadata["target_col"]]), train[comp.metadata["target_col"]]
         except Exception as e:
             print(f"prepare_train_data() : internal error : data loading failed : {e=} for competition {comp.comp_id}")
             self.shutdown(1)
 
 
-        kf = KFold(n_splits=self.num_folds(comp))
+        kf = KFold(n_splits=self.total_folds(comp))
         for i, (train_idx, val_idx) in enumerate(kf.split(X)):
             X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
             train = pd.concat([X_train, y_train], axis=1)

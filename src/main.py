@@ -1,8 +1,10 @@
-import bench
+from src.bench import *
 
-import runners.test
+import src.runners.test
 
 import os
+
+from typing import Any
 
 
 def merge_results(results: dict, result: dict, idx: int):
@@ -23,16 +25,16 @@ def merge_results(results: dict, result: dict, idx: int):
         results[field].append(None)
 
 
-def report(results: dict, result: dict, idx: int, runner: object, competition: Competition, lang: Language, codelang: CodeLanguage, fold: int):
+def report(results: dict, result: dict, idx: int, runner: Any, competition: Competition, lang: Language, codelang: CodeLanguage, fold: int | None):
     merge_results(results, {**result, "runner": runner.runner_id, "competition_id": competition.comp_id, "lang": str(lang), "codelang": str(codelang), "fold": fold}, idx)
 
 
-def report_error(results: dict, idx: int, runner: object, e: Exception, competition: Competition, lang: Language, codelang: CodeLanguage, fold: int):
+def report_error(results: dict, idx: int, runner: Any, e: Exception, competition: Competition, lang: Language, codelang: CodeLanguage, fold: int | None):
     print(f"Code execution failed for {runner.runner_id} : {e=}")
     report(results, {"errors": [f"Runner code execution failed : {e=}"], "success": False}, idx, runner, competition, lang, codelang, fold)
 
 
-def execute_bench(runners: list[object], max_folds: int):
+def execute_bench(runners: list[Any], max_folds: int):
     # Initialize BenchPipeline
     # ...
 
@@ -62,7 +64,7 @@ def execute_bench(runners: list[object], max_folds: int):
                     if runner.input_mode == RunnerInput.DescOnly:
                         try:
                             result = runner.run(bench, competition, lang, codelang)
-                        except BaseException as e:
+                        except Exception as e:
                             report_error(results, idx, runner, e, competition, lang, codelang, None)
                             idx += 1
                             continue
@@ -81,7 +83,7 @@ def execute_bench(runners: list[object], max_folds: int):
                         if runner.input_mode == RunnerInput.DescAndData:
                             try:
                                 result = runner.run(bench, competition, lang, codelang, fold)
-                            except BaseException:
+                            except Exception as e:
                                 report_error(results, idx, runner, e, competition, lang, codelang, fold.fold_idx)
                                 idx += 1
                                 continue
@@ -94,7 +96,7 @@ def execute_bench(runners: list[object], max_folds: int):
 
 def main():
     # Execute benchmark for only the test runner
-    execute_bench([TestRunner()], 1)
+    execute_bench([runners.test.TestRunner()], 1)
 
 
 if __name__ == "__main__":
