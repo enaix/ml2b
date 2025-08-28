@@ -1,8 +1,11 @@
+from pathlib import Path
 import docker
 from pydantic import BaseModel
 
-
 class BuildArgs(BaseModel):
+    """
+    Base spec model for docker image
+    """
     dockerfile: str = "environments/runtime/Dockerfile"
     platform: str = "linux/amd64"
     rm: bool = True
@@ -11,14 +14,15 @@ class BuildArgs(BaseModel):
     tag: str = "runtime-env"
 
 
-def build_image(build_args: BuildArgs) -> None:
+def build_image(build_args: BuildArgs, client: docker.DockerClient | None = None) -> None:
     """
     Build image from spec
 
     Args:
         build_args (BuildArgs): image spec
     """
-    client = docker.from_env()
+    if client is None:
+        client = docker.from_env()
     for chunk in client.api.build(**build_args.model_dump()):
         if "stream" in chunk:
             for line in chunk["stream"].splitlines():
@@ -40,5 +44,5 @@ def build_agent(build_args: BuildArgs) -> None:
     base_image = client.images.list(name=tag)
     build_base_runtime = len(base_image) == 0 and build_args.tag != tag
     if build_base_runtime:
-        build_image(BuildArgs())
-    build_image(build_args)
+        build_image(BuildArgs(), client)
+    build_image(build_args, client)

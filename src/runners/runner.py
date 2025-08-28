@@ -6,15 +6,28 @@ from src.bench import (
     Language,
     CodeLanguage,
 )
+import docker
+from pydantic import BaseModel
+from pathlib import Path
 
+class RunnerSpec(BaseModel):
+    """
+    Spec for running competition containers
+    """
+    agent_name: str
+    num_workers: int
+    competition_set: Path
+    data_dir: Path
+    container_config: Path
 
 class DockerRunner:
     input_mode: RunnerInput = RunnerInput.DescOnly
     output_mode: RunnerOutput = RunnerOutput.CodeOnly
-    runner_id: str = "test_runner"
+    runner_id: str = "docker_runner"
+    client: docker.DockerClient | None = None
 
-    def __init__(self):
-        pass
+    def __init__(self, runner_spec: RunnerSpec):
+        self.runner_spec = runner_spec
 
     # run() does not take CompetitionData, since input_mode is DescOnly
     def run(

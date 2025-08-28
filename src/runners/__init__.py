@@ -1,1 +1,1 @@
-from .runner import DockerRunner
+from .runner import DockerRunner, RunnerSpec
