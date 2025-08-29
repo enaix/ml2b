@@ -15,10 +15,9 @@ app = typer.Typer(invoke_without_command=True)
 DEFAULT_CONFIG_PATH = Path(__file__) / "environments" / "container_config.yaml"
 DEFAULT_DATA_PATH = Path(__file__) / "data"
 
-
 @app.command()
 def run_bench(
-    agent_name: Annotated[str, typer.Option(help="Agent image name")],
+    image_name: Annotated[str, typer.Option(help="Agent image name")],
     competition_set: Annotated[
         str, typer.Option(help="Path to file with competition set")
     ],
@@ -38,7 +37,7 @@ def run_bench(
     Run banch for a specified agent
     """
     runner_spec = RunnerSpec(
-        agent_name=agent_name,
+        image_name=image_name,
         num_workers=num_workers,
         competition_set=Path(competition_set).resolve(),
         data_dir=Path(data_dir).resolve(),

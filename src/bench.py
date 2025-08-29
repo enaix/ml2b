@@ -6,6 +6,7 @@ import traceback
 import json
 import subprocess
 from pathlib import Path
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -353,5 +354,7 @@ class BenchPipeline:
 
         fold_dir = os.path.join(self.base_path(), "competitions", "folds", comp.comp_id)
         private_dir = os.path.join(self.base_path(), "competitions", "validation", comp.comp_id)
-        os.rmdir(fold_dir)
-        os.rmdir(private_dir)
+        if os.path.exists(fold_dir):
+            shutil.rmtree(fold_dir)
+        if os.path.exists(private_dir):
+            shutil.rmtree(private_dir)    

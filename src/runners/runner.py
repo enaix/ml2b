@@ -6,42 +6,141 @@ from src.bench import (
     Language,
     CodeLanguage,
 )
+import time
 import docker
 from pydantic import BaseModel
 from pathlib import Path
+from typing import Any, Callable
+import asyncio
+import traceback
+from typing import Any, Iterable
+import uuid
+from loguru import logger
 
 class RunnerSpec(BaseModel):
     """
     Spec for running competition containers
     """
-    agent_name: str
+    image_name: str
     num_workers: int
     competition_set: Path
     data_dir: Path
     container_config: Path
 
+class Task(BaseModel):
+    idx: int
+    bench: BenchPipeline
+    competition: Competition
+    lang: Language
+    codelang: CodeLanguage
+    fold: int | None = None
+    success_callbacks: Iterable[Callable[[Any], Any]]
+    failure_callbacks: Iterable[Callable[[Any], Any]]
+
+class TaskOut(BaseModel):
+    success: bool = False
+    code: str | None
+    submission: str | None
+    error: str | None
+    callbacks_results: Iterable[Any]
+    consumed_time: float
+
+class TasksManager(BaseModel):
+    results: dict[int, TaskOut]
+    consumed_time: float
+
 class DockerRunner:
     input_mode: RunnerInput = RunnerInput.DescOnly
     output_mode: RunnerOutput = RunnerOutput.CodeOnly
     runner_id: str = "docker_runner"
-    client: docker.DockerClient | None = None
 
     def __init__(self, runner_spec: RunnerSpec):
         self.runner_spec = runner_spec
+        self.workers = []
+        self.tasks: asyncio.Queue[Task] = asyncio.Queue()
+        self.tasks_manager: TasksManager | None = None
+        self.client = docker.from_env()
+    
+    def add_task(self,
+                 idx: int, 
+                 bench: BenchPipeline, 
+                 competition: Competition, 
+                 lang: Language, 
+                 codelang: CodeLanguage,
+                 success_callbacks: Iterable[Callable[[Any], Any]],
+                 failure_callbacks: Iterable[Callable[[Any], Any]]
+                 ) -> None:
+        task = Task(
+            idx=idx,
+            bench=bench,
+            competition=competition,
+            lang=lang,
+            codelang=codelang,
+            success_callbacks=success_callbacks,
+            failure_callbacks=failure_callbacks
+        )
+        self.tasks.put_nowait(task)
 
-    # run() does not take CompetitionData, since input_mode is DescOnly
-    def run(
+    def create_container(self, task: Task):
+        container_uuid = str(uuid.uuid4().hex)
+        time_id = time.strftime("%Y-%m-%dT%H-%M-%S", time.gmtime())
+        container = self.client.containers.create(
+            image=self.runner_spec.agent_name,
+            name=f"task-{task.competition.comp_id}-{time_id}-{container_uuid}",
+            detach=True,
+            volumes=...,
+            environment=...,
+        )
+        logger.info(f"[blue]Create: {container.name}[/blue]")
+        return container
+
+    def runtime_worker(self, task: Task, task_out: TaskOut):
+        volumes = {
+            task.competition.
+        }
+        container = self.create_container(task)
+        logger.info(f"[blue]Run: {container.name}[/blue]")
+        try:
+            start_time = time.monotonic()
+            container.start()
+            execute_agent()
+            save_output()
+            task_out.consumed_time = time.monotonic() - start_time
+            logger.info(f"[blue]Running: {container.name} spent {task_out.consumed_time}[/blue]")
+            return None
+        except Exception as e:
+            raise e
+        finally:
+            clean_up()
+
+    async def task_router(self) -> None:
+        while True:
+            task = await self.tasks.get()
+            #initialize loger
+            task_out = TaskOut()
+            try:
+                await asyncio.to_thread(
+                    self.runtime_worker,
+                    task=task
+                    )
+                task_out.success = True
+            except Exception as e:
+                trace = traceback.format_exc()
+                task_out.error = trace
+            finally:
+                self.tasks.task_done()
+                self.tasks_manager[task.idx] = task_out
+
+    async def run(
         self,
-        bench: BenchPipeline,
-        comp: Competition,
-        lang: Language,
-        codelang: CodeLanguage,
-    ) -> dict:
-        # get description and other stuff from comp
-        # call bench to execute
-        # return resulting score
-        pass
-
-    # if we needed to process data
-    # def run(self, bench: BenchPipeline, comp: Competition, fold: CompetitionData) -> dict:
-    #    pass
+    ) -> dict[str, Any]:
+        self.tasks_manager = TasksManager()
+        for _ in range(self.runner_spec.num_workers):
+            worker = asyncio.create_task(self.runtime_worker)
+            self.workers.append(worker)
+        start_time = time.monotonic()
+        await self.tasks.join()
+        await asyncio.gather(*self.workers, return_exceptions=True)
+        self.tasks_manager.consumed_time = time.monotonic() - start_time
+        self.tasks.clear()
+        return self.tasks_manager.model_dump()
