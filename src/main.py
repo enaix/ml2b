@@ -13,7 +13,6 @@ import time
 
 from typing import Any
 
-
 def merge_results(results: dict, result: dict, idx: int):
     for field in result.keys():
         # For each key in result
