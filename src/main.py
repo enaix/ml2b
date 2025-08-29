@@ -1,5 +1,7 @@
 from .runners import DockerRunner
 import bench
+from src.bench import *
+
 import os
 import asyncio
 from .runners import RunnerSpec, Task
@@ -8,6 +10,8 @@ from pathlib import Path
 from loguru import logger
 from functools import partial
 import time
+
+from typing import Any
 
 
 def merge_results(results: dict, result: dict, idx: int):
@@ -28,11 +32,11 @@ def merge_results(results: dict, result: dict, idx: int):
         results[field].append(None)
 
 
-def report(results: dict, result: dict, idx: int, runner: object, competition: Competition, lang: Language, codelang: CodeLanguage, fold: int):
+def report(results: dict, result: dict, idx: int, runner: Any, competition: Competition, lang: Language, codelang: CodeLanguage, fold: int | None):
     merge_results(results, {**result, "runner": runner.runner_id, "competition_id": competition.comp_id, "lang": str(lang), "codelang": str(codelang), "fold": fold}, idx)
 
 
-def report_error(results: dict, idx: int, runner: object, e: Exception, competition: Competition, lang: Language, codelang: CodeLanguage, fold: int):
+def report_error(results: dict, idx: int, runner: Any, e: Exception, competition: Competition, lang: Language, codelang: CodeLanguage, fold: int | None):
     print(f"Code execution failed for {runner.runner_id} : {e=}")
     report(results, {"errors": [f"Runner code execution failed : {e=}"], "success": False}, idx, runner, competition, lang, codelang, fold)
 
