@@ -39,12 +39,22 @@ def get_bench_params() -> dict:
         common.report_error(f"Bad BENCH_MODE value: {bench_mode}. BENCH_MODE should be either MONO_PREDICT or MODULAR_PREDICT")
         common.graceful_exit(1)
 
-    return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode}
+    bench_folds_ov = os.environ.get("BENCH_FOLDS_OVERRIDE")
+    if bench_folds_ov is not None:
+        try:
+            bench_folds = int(bench_folds_ov)
+        except ValueError:
+            common.report_error(f"Bad BENCH_FOLDS_OVERRIDE value: {bench_folds_ov} is not an integer")
+            common.graceful_exit(1)
+    else:
+        bench_folds = None
+
+    return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode, "bench_folds": bench_folds}
 
 
 # Loading the submission code
 # ===========================
-def load_mono_submission(params) -> dict:
+def load_mono_submission() -> dict:
     try:
         mod = importlib.import_module("submission.code")  # loads the file 'code.py'
         if not hasattr(mod, 'train_and_predict'):
@@ -56,7 +66,7 @@ def load_mono_submission(params) -> dict:
         common.graceful_exit(1)
 
 
-def load_modular_submission(params) -> dict:
+def load_modular_submission() -> dict:
     try:
         mod = importlib.import_module("submission.code")  # loads the file 'code.py'
         funcs = {}
@@ -76,12 +86,12 @@ def main():
     common.bench_results.is_in_container = True
 
     params = get_bench_params()
-    if params.mode == BenchMode.MonolithicPredict:
+    if params["bench_mode"] == BenchMode.MonolithicPredict:
         train_code = load_mono_submission()
     else:
         train_code = load_modular_submission()
 
-    results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params.mode == BenchMode.MonolithicPredict)
+    results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"))
 
     common.log_results_and_exit(results)
 

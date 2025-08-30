@@ -3,6 +3,9 @@ competitions/folds/
 competitions/validation/
 competitions/tasks/
 
+python/data/
+python/submission/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
