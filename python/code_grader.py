@@ -75,7 +75,7 @@ def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grade
 
 
 
-def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_predict: bool) -> dict:
+def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_predict: bool, folds: int | None) -> dict:
     """
     Executes LLM-generated code, computes CV scores, and returns metrics.
     """
@@ -90,6 +90,10 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
     if comp is None:
         common.report_error(f"Unknown competition: {competition_id}")
         common.graceful_exit(1)
+
+    # Set folds override
+    if folds is not None:
+        comp["cv_folds"] = folds
 
     common.set_bench_info({"grader_competition": competition_id, "grader_language": language})
 
@@ -106,7 +110,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
     grader = comp.get("grader")
     if grader is None:
         # Execute the default grader
-        grader = "cvfold"
+        grader = "default"
     elif GRADERS.get(grader) is None:
         common.report_error(f"grade_llm_code() : internal error : grader not found : {grader}")
         common.graceful_exit(1)
@@ -115,7 +119,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
 
     # Execute the autograder
     print("grade_llm_code() : executing...")
-    score = autograde_cvfold(X, y, train_code, GRADERS[grader], comp, scores, language, mono_predict)
+    score = autograde_cvfold(X, y, train_code, GRADERS[grader], competition_id, comp, scores, language, mono_predict)
 
     return {
         "score": score,

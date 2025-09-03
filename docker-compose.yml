@@ -13,6 +13,7 @@ services:
       COMPETITION_ID: ${COMPETITION_ID}
       BENCH_LANG: ${BENCH_LANG}
       BENCH_MODE: ${BENCH_MODE}
+      BENCH_FOLDS_OVERRIDE: ${BENCH_FOLDS_OVERRIDE}
 networks:
   python_no_inet:
     driver: bridge
