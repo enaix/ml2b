@@ -57,8 +57,10 @@ def get_bench_params() -> dict:
 def load_mono_submission() -> dict:
     try:
         mod = importlib.import_module("submission.code")  # loads the file 'code.py'
-        if not hasattr(mod, 'train_and_predict'):
-            common.report_error("Submission code does not have the train_and_predict function")
+        if not hasattr(mod, "train_and_predict"):
+            common.report_error(
+                "Submission code does not have the train_and_predict function"
+            )
             common.graceful_exit(1)
         return {"train_and_predict": mod.train_and_predict}
     except BaseException as e:
@@ -94,6 +96,7 @@ def main():
     results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"))
 
     common.log_results_and_exit(results)
+
 
 if __name__ == "__main__":
     main()

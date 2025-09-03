@@ -5,6 +5,8 @@ import weakref
 import traceback
 import json
 import subprocess
+from pathlib import Path
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -36,14 +38,14 @@ CODEPATHS = {CodeLanguage.Python: "code.py", CodeLanguage.R: None, CodeLanguage.
 
 
 class RunnerInput(StrEnum):
-    DescOnly    = "DescOnly"     # Runner only takes in competition description
+    DescOnly = "DescOnly"  # Runner only takes in competition description
     DescAndData = "DescAndData"  # Runner takes in competition description and data
 
 
 class RunnerOutput(StrEnum):
-    CodeOnly    = "CodeOnly"     # Runner returns only the code
+    CodeOnly = "CodeOnly"  # Runner returns only the code
     CodeAndData = "CodeAndData"  # Runner returns both code and data
-    DataOnly    = "DataOnly"     # Runner returns only the data
+    DataOnly = "DataOnly"  # Runner returns only the data
 
 
 class BenchMode(StrEnum):
@@ -71,10 +73,8 @@ class Competition:
         # Process languages
         self.tasks = tasks
 
-
     def get_available_languages(self) -> list[Language]:
         return list(self.tasks.keys())
-
 
     def _get_meta_for_lang(self, lang: Language) -> dict:
         values = self.tasks.get(lang)
@@ -83,14 +83,11 @@ class Competition:
             self.bench().shutdown(1)
         return values
 
-
     def get_description(self, lang: Language) -> dict:
         return self._get_meta_for_lang(lang).get("description")
 
-
     def get_data_card(self, lang: Language) -> dict:
         return self._get_meta_for_lang(lang).get("data_card")
-
 
     def get_domain(self, lang: Language) -> dict:
         return self._get_meta_for_lang(lang).get("domain")
@@ -109,7 +106,6 @@ class CompetitionData:
 
     def get_val(self) -> os.PathLike:
         return self.val_path
-
 
 
 class BenchPipeline:
@@ -145,7 +141,7 @@ class BenchPipeline:
             print(f"Missing {comp_json} file")
             self.shutdown(1)
 
-        with open(comp_json, 'r') as f:
+        with open(comp_json, "r") as f:
             comp = json.load(f)
 
         tasks_dir = os.path.join(self.base_path(), "competitions", "tasks")
@@ -201,7 +197,6 @@ class BenchPipeline:
     def base_path(self) -> os.PathLike:
         return self.basepath
 
-
     def shutdown(self, exit_code: int):
         if exit_code != 0:
             print(f"Benchmark stopped with abnormal exit code {exit_code}")
@@ -215,7 +210,6 @@ class BenchPipeline:
 
     def total(self) -> int:
         return len(self.competitions)
-
 
     def total_folds(self, comp: Competition) -> int:
         return min(self.max_folds, comp.metadata.get("cv_folds", 1))
@@ -312,6 +306,11 @@ class BenchPipeline:
         df = pd.read_csv(path_to_data)
         return self.test_submission_data(comp, fold, lang, codelang, df)
 
+    # def test_submission_data(self, comp: Competition, fold: CompetitionFold, data: os.path.Path) -> object:
+    #     """
+    #     Submit the prediction for X_val and return metric
+    #     """
+    #     pass
 
     def prepare_train_data(self, comp: Competition) -> None:
         """
@@ -338,7 +337,9 @@ class BenchPipeline:
             train = pd.read_csv(os.path.join("data", comp.comp_id, "train.csv"))
             X, y = train.drop(columns=[comp.metadata["target_col"]]), train[comp.metadata["target_col"]]
         except Exception as e:
-            print(f"prepare_train_data() : internal error : data loading failed : {e=} for competition {comp.comp_id}")
+            print(
+                f"prepare_train_data() : internal error : data loading failed : {e=} for competition {comp.comp_id}"
+            )
             self.shutdown(1)
 
 
@@ -366,5 +367,7 @@ class BenchPipeline:
 
         fold_dir = os.path.join(self.base_path(), "competitions", "folds", comp.comp_id)
         private_dir = os.path.join(self.base_path(), "competitions", "validation", comp.comp_id)
-        os.rmdir(fold_dir)
-        os.rmdir(private_dir)
+        if os.path.exists(fold_dir):
+            shutil.rmtree(fold_dir)
+        if os.path.exists(private_dir):
+            shutil.rmtree(private_dir)    

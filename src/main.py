@@ -1,11 +1,17 @@
+from .runners import DockerRunner
+import bench
 from src.bench import *
 
-import src.runners.test
-
 import os
+import asyncio
+from .runners import RunnerSpec, Task
+from .bench import Competition, Language, CodeLanguage, RunnerInput, RunnerOutput, BenchPipeline
+from pathlib import Path
+from loguru import logger
+from functools import partial
+import time
 
 from typing import Any
-
 
 def merge_results(results: dict, result: dict, idx: int):
     for field in result.keys():
@@ -34,70 +40,38 @@ def report_error(results: dict, idx: int, runner: Any, e: Exception, competition
     report(results, {"errors": [f"Runner code execution failed : {e=}"], "success": False}, idx, runner, competition, lang, codelang, fold)
 
 
-def execute_bench(runners: list[Any], max_folds: int):
-    # Initialize BenchPipeline
-    # ...
-
-    # Run the execution loop
-    #   if we have runners with output_mode equal to CodeAndData or DataOnly, then we also have to prepare data splits
-    #   (just iterate over each competition and each fold if applicable)
-
-    process_data = any([x.input_mode == RunnerInput.DescAndData for x in runners])
-
-    base_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir))
-    bench = BenchPipeline(base_path, max_folds, process_data)
-
-    results = {}
+async def execute_bench(runner: DockerRunner, max_folds: int) -> None:
+    base_path = Path(__file__).resolve().absolute().parent.parent
+    bench = BenchPipeline(base_path, max_folds, runner.input_mode == RunnerInput.DescAndData)
     idx = 0
-
     while (competition := bench.next_competition()) is not None:
-        # Process a competition
+    # Process a competition
         bench.prepare_train_data(competition)
 
         # Iterate over a grid of languages
         for lang in bench.languages():
             for codelang in CodeLanguage:
+                success_callback=partial(report, runner=runner, competition=competition, lang=lang, codelang=codelang)
+                failure_callback=partial(report_error, runner=runner, competition=competition, lang=lang, codelang=codelang)
+                if runner.input_mode == RunnerInput.DescOnly:
+                    runner.add_task(idx, bench, competition, lang, codelang, 
+                                    [partial(success_callback, idx=idx, fold=None)], 
+                                    [partial(failure_callback, idx=idx, fold=None)])
+                    idx += 1
 
-                # We execute CodeOnly runners first
-                for runner in runners:
-                    print(f"[{idx}] Executing runner {runner.runner_id}...")
-                    if runner.input_mode == RunnerInput.DescOnly:
-                        try:
-                            result = runner.run(bench, competition, lang, codelang)
-                        except Exception as e:
-                            report_error(results, idx, runner, e, competition, lang, codelang, None)
-                            idx += 1
-                            continue
-
-                        report(results, result, idx, runner, competition, lang, codelang, None)
-                        idx += 1
-
-
-                # Obtain data
                 while (fold := bench.next_fold(competition)) is not None:
-
-                    # Execute DescAndData runners
-                    for runner in runners:
-                        print(f"[{idx}] Executing runner {runner.runner_id} : fold {fold.fold_idx+1}...")
-
-                        if runner.input_mode == RunnerInput.DescAndData:
-                            try:
-                                result = runner.run(bench, competition, lang, codelang, fold)
-                            except Exception as e:
-                                report_error(results, idx, runner, e, competition, lang, codelang, fold.fold_idx)
-                                idx += 1
-                                continue
-
-                            report(results, result, idx, runner, competition, lang, codelang, fold.fold_idx)
-                            idx += 1
-
+                    if runner.input_mode == RunnerInput.DescAndData:
+                        runner.add_task(idx, bench, competition, lang, codelang, 
+                                    [partial(success_callback, idx=idx, fold=fold.idx)], 
+                                    [partial(failure_callback, idx=idx, fold=fold.idx)])
+                        idx += 1
+        results = await runner.run()
         bench.erase_train_data(competition)
 
 
-def main():
-    # Execute benchmark for only the test runner
-    execute_bench([runners.test.TestRunner()], 1)
+def run_benchmark(runner_spec: RunnerSpec) -> None:
+    asyncio.run(execute_bench([DockerRunner(runner_spec)], 1))
 
 
 if __name__ == "__main__":
-    main()
+    run_benchmark()
