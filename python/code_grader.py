@@ -6,14 +6,11 @@ import json
 import sys
 import os
 from glob import glob
-
-
 from grade_functions import *
 
 
 # Submission grader code
 # ======================
-
 def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grader: object, competition_id: str, comp: dict, scores: list, language: str, mono_predict: bool) -> float:
     def cvfold_run(X_train, y_train, X_val, y_val):
         def mono_predict():
@@ -39,14 +36,15 @@ def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grade
             common.report_error(f"Submission code execution failed : {sys.exc_info()}")
             scores.append(np.nan)  # Mark failed folds
 
-
-    num_folds = len(glob(f"data/folds/{competition_id}/train_*.csv"))
+    folds_root = f"data/folds/{competition_id}"
+    private_root = f"data/validation/{competition_id}"
+    num_folds = len(p for p in folds_root.iterdir() if p.is_dir() and p.name.startswith("fold_"))
     if num_folds == comp["cv_folds"]:
         # Use existing folds
         for i in range(num_folds):
-            train_path = os.path.join("data", "folds", competition_id, f"train_{i}.csv")
-            x_val_path = os.path.join("data", "folds", competition_id, f"X_val_{i}.csv")
-            y_val_path = os.path.join("data", "private", competition_id, f"y_val_{i}.csv")
+            train_path = folds_root / f"fold_{i}" / "train.csv"
+            x_val_path = private_root / f"fold_{i}" / "X_val.csv"
+            y_val_path = private_root / f"fold_{i}" / "y_val.csv"
 
             df_train = pd.read_csv(train_path)
             X_val = pd.read_csv(x_val_path)

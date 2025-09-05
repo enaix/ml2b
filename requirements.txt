@@ -5,3 +5,4 @@ loguru==0.7.3
 pandas==2.3.2
 scikit-learn==1.7.1
 rich==14.1.0
+click==8.2.1

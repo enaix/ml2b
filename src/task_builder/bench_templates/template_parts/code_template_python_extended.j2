@@ -1,0 +1,46 @@
+- You MUST implement the following Python functions with the exact signatures. Changing their names, arguments, or return types will result in disqualification.
+- You may define additional functions, classes, or modules as needed to implement your solution, as long as the required functions above are present with the correct signatures.
+- Your submission must be contained in a **single Python file**. All code, including any helper functions or classes, should reside in this file. The evaluation will only consider this file as the final solution.
+
+```python
+import pandas as pd
+import numpy as np
+from typing import Any
+
+def train(X_train: pd.DataFrame, y_train: pd.DataFrame) -> Any:
+    """
+    This function takes X_train and y_train and returns the trained model and any intermediate variables
+
+    Args:
+        X_train (pd.DataFrame): Dataframe containing the training features
+        y_train (pd.DataFrame): Dataframe containing the training target
+    """
+    ...
+
+def prepare_val(X_val: pd.DataFrame, train_output: Any) -> Any:
+    """
+    This function takes X_val and train function output and returns processed X_val
+
+    Args:
+        X_val (pd.DataFrame): Dataframe containing the validation features
+        train_output (Any): Output from the train function
+    """
+    ...
+
+def predict(train_output: Any, prepare_val_output: Any) -> np.array:
+    """
+    This function takes train and prepare_val functions outputs and generates the prediction for validation features
+
+    Args:
+        train_output (Any): Output from the train function
+        prepare_val_output (Any): Output from the prepare_val function, which is the processed X_val dataframe
+    """
+    ...
+
+def run(X_train: pd.DataFrame, y_train: pd.DataFrame, X_val: pd.DataFrame) -> np.array:
+    """
+    Entrypoint for submission.
+    """
+    train_output = train(X_train, y_train)
+    return predict(train_output, prepare_val(X_val, train_output))
+```

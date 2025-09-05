@@ -10,8 +10,9 @@ import shutil
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, train_test_split
 import importlib
+from docker import DockerClient
 
 from typing import Any
 
@@ -26,15 +27,18 @@ class Language(StrEnum):
     Romanian = "Romanian"
     Spanish = "Spanish"
     Turkish = "Turkish"
+    Belarus = "Belarus"
+    Japanese = "Japanese"
 
 
 class CodeLanguage(StrEnum):
     Python = "python"
-    R = "rlang"
-    Julia = "julia"
+    # R = "rlang"
+    # Julia = "julia"
 
 
-CODEPATHS = {CodeLanguage.Python: "code.py", CodeLanguage.R: None, CodeLanguage.Julia: None}
+CODEPATHS = {CodeLanguage.Python: "code.py",} #CodeLanguage.R: None, CodeLanguage.Julia: None}
+CODE_EXT = {CodeLanguage.Python: ".py"}
 
 
 class RunnerInput(StrEnum):
@@ -66,11 +70,6 @@ class Competition:
             print(f"Competition {comp_id} : missing train.csv")
             bench().shutdown(1)
 
-        if not os.path.exists(self.test_data):
-            print(f"Competition {comp_id} : missing test.csv")
-            bench().shutdown(1)
-
-        # Process languages
         self.tasks = tasks
 
     def get_available_languages(self) -> list[Language]:
@@ -91,6 +90,12 @@ class Competition:
 
     def get_domain(self, lang: Language) -> dict:
         return self._get_meta_for_lang(lang).get("domain")
+
+    def get_metric(self, lang: Language) -> dict:
+        return self._get_meta_for_lang(lang).get("metric")
+
+    def get_code_ext(self, code_lang: CodeLanguage) -> str:
+        return CODE_EXT[code_lang]
 
 
 class CompetitionData:
@@ -126,13 +131,13 @@ class BenchPipeline:
 
 
     def _initialize_folders(self) -> None:
-        folds_dir = os.path.join("competitions", "folds")
-        private_dir = os.path.join("competitions", "private")
+        folds_dir = os.path.join(self.base_path(), "competitions", "folds")
+        private_dir = os.path.join(self.base_path(), "competitions", "validation")
 
         if os.path.exists(folds_dir):
-            os.rmdir(folds_dir)
+            shutil.rmtree(folds_dir)
         if os.path.exists(private_dir):
-            os.rmdir(private_dir)
+            shutil.rmtree(private_dir)
 
 
     def _load_competitions(self) -> None:
@@ -157,22 +162,23 @@ class BenchPipeline:
                 print(f"Bad task file {file}: no such language")
                 self.shutdown(1)
 
-            df = pd.read_csv(file)
-            tasks[lang] = df.to_json()
+            df = pd.read_csv(Path(tasks_dir) / file, sep=None, engine="python")
+            tasks[lang] = df.to_dict(orient='list')
 
-        for key, value in comp:
+
+        for key, value in comp.items():
             if key.startswith("_"):
                 continue  # skip comments
 
             comp_tasks = {}
             for lang in self._languages:
                 # Try to find the matching competition id
-                if not tasks[lang].get("comp-id"):
-                    print(f"{str(lang)} task descriptions : missing comp-id field")
+                if not tasks[lang].get("competition-id"):
+                    print(f"{str(lang)} task descriptions : missing competition field")
                     self.shutdown(1)
 
                 try:
-                    idx = tasks[lang]["comp-id"].index(key)
+                    idx = tasks[lang]["competition-id"].index(key)
                 except ValueError:
                     print(f"! warning: competition id {key} : missing in {str(lang)} task descriptions")
                     continue
@@ -186,12 +192,10 @@ class BenchPipeline:
 
             self.competitions.append(Competition(key, weakref.ref(self), value, comp_tasks))
             self.folds[key] = []
-            # Creation and deletion of training data should be handled from the main loop
-            # self.prepare_train_data(self.competitions[-1])
 
 
     def _load_graders(self) -> None:
-        self.grader_module = importlib.import_module(os.path.join(self.base_path(), "python", "grade_functions.py"))
+        self.grader_module = importlib.import_module(os.path.join("python.grade_functions"))
 
 
     def base_path(self) -> os.PathLike:
@@ -206,7 +210,6 @@ class BenchPipeline:
 
     def languages(self) -> list[Language]:
         return self._languages
-
 
     def total(self) -> int:
         return len(self.competitions)
@@ -250,7 +253,7 @@ class BenchPipeline:
 
         submission_dir = os.path.join(str(codelang), "submission")
         if os.path.exists(submission_dir):
-            os.rmdir(submission_dir)
+            shutil.rmtree(submission_dir)
         os.mkdir(submission_dir)
 
         if codelang == CodeLanguage.Python:
@@ -265,9 +268,10 @@ class BenchPipeline:
                 ["docker", "compose", "run", str(codelang)],
                 capture_output=True,
                 text=True,
-                env={"COMPETITION_ID": comp.comp_id, "BENCH_LANG": str(lang), "BENCH_MODE": str(BenchMode.MonolithicPredict)},
-                timeout=60*60  # 1 hour timeout
+                env={"COMPETITION_ID": comp.comp_id, "BENCH_LANG": str(lang), "BENCH_MODE": str(BenchMode.ModularPredict)},
+                timeout=60*60
             )
+
         if result.returncode != 0:
             print(f"{str(codelang)} container execution failed: {result.stderr}")
             self.shutdown(1)
@@ -312,7 +316,7 @@ class BenchPipeline:
     #     """
     #     pass
 
-    def prepare_train_data(self, comp: Competition) -> None:
+    def prepare_train_data(self, comp: Competition, seed=42) -> None:
         """
         Prepare X_train, y_train and X_val files for each fold
         """
@@ -320,9 +324,9 @@ class BenchPipeline:
             return None
 
         fold_dir = os.path.join(self.base_path(), "competitions", "folds")
-        comp_fold_dir = os.path.join(fold_dir, comp.comp_id)
+        comp_fold_dir = Path(fold_dir) / comp.comp_id
         private_dir = os.path.join(self.base_path(), "competitions", "validation")
-        comp_private_dir = os.path.join(private_dir, comp.comp_id)
+        comp_private_dir = Path(private_dir) / comp.comp_id
 
         if not os.path.exists(fold_dir):
             os.mkdir(fold_dir)
@@ -342,20 +346,45 @@ class BenchPipeline:
             )
             self.shutdown(1)
 
-
-        kf = KFold(n_splits=self.total_folds(comp))
-        for i, (train_idx, val_idx) in enumerate(kf.split(X)):
-            X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+        num_folds = self.total_folds(comp)
+        if num_folds == 1:
+            X_train, X_val, y_train, y_val = train_test_split(
+                X, y, 
+                test_size=0.2,
+                random_state=seed,
+                shuffle=True
+            )
             train = pd.concat([X_train, y_train], axis=1)
-            X_val, y_val = X.iloc[val_idx], y.iloc[val_idx]
 
-            train_path = os.path.join(comp_fold_dir, f"train_{i}.csv")
-            x_val_path = os.path.join(comp_fold_dir, f"X_val_{i}.csv")
-            y_val_path = os.path.join(comp_private_dir, f"y_val_{i}.csv")
-            train.to_csv(train_path, index=False)
-            X_val.to_csv(x_val_path, index=False)
-            y_val.to_csv(y_val_path, index=False)  # this file remains private
-            self.folds[comp.comp_id].append(CompetitionData(train_path, x_val_path, i))
+            train_path = comp_fold_dir / "fold_0" 
+            x_val_path = comp_private_dir / "fold_0"
+            y_val_path = comp_private_dir / "fold_0"
+            train_path.mkdir(exist_ok=True, parents=True)
+            x_val_path.mkdir(exist_ok=True, parents=True)
+            y_val_path.mkdir(exist_ok=True, parents=True)
+
+            train.to_csv(train_path / "train.csv", index=False)
+            X_val.to_csv(x_val_path / "X_val.csv", index=False)
+            y_val.to_csv(y_val_path / "y_val.csv", index=False)
+
+            self.folds[comp.comp_id].append(CompetitionData(train_path, x_val_path, 0))
+        else:
+            kf = KFold(n_splits=num_folds, random_state=seed, shuffle=True)
+            for i, (train_idx, val_idx) in enumerate(kf.split(X)):
+                X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+                train = pd.concat([X_train, y_train], axis=1)
+                X_val, y_val = X.iloc[val_idx], y.iloc[val_idx]
+
+                train_path = comp_fold_dir / f"fold_{i}"
+                x_val_path = comp_private_dir / f"fold_{i}"
+                y_val_path = comp_private_dir / f"fold_{i}"
+                train_path.mkdir(exist_ok=True, parents=True)
+                x_val_path.mkdir(exist_ok=True, parents=True)
+                y_val_path.mkdir(exist_ok=True, parents=True)
+                train.to_csv(train_path / "train.csv", index=False)
+                X_val.to_csv(x_val_path / "X_val.csv", index=False)
+                y_val.to_csv(y_val_path / "y_val.csv", index=False)
+                self.folds[comp.comp_id].append(CompetitionData(train_path, x_val_path, i))
 
 
     def erase_train_data(self, comp: Competition) -> None:

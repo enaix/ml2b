@@ -31,7 +31,6 @@ pyarrow==21.0.0
 pyocr==0.8.5
 pyparsing==3.2.3
 nltk==3.9.1
-implicit==0.7.2
 sacrebleu==2.5.1
 rouge-score==0.1.2
 scikit-image==0.25.2

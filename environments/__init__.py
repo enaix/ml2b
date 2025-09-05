@@ -1,1 +1,1 @@
-from .utils import BuildArgs, build_agent
+from .utils import BuildArgs, build_image

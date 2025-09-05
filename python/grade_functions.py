@@ -2,6 +2,7 @@ import common
 
 import numpy as np
 import pandas as pd
+import sys
 
 from sklearn.metrics import (
     roc_auc_score,
@@ -27,7 +28,6 @@ METRICS = {
 
 # Grader functions
 # ================
-
 def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
     metric = METRICS.get(comp["metric"])
     if metric is None:
@@ -45,6 +45,3 @@ def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
 GRADERS = {
     "default": grader_default
 }
-
-
-

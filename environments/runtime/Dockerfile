@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     build-essential \
+    git \
     curl \
     wget && \
     rm -rf /var/lib/apt/lists/*
@@ -51,4 +52,10 @@ RUN R -e "install.packages(c('methods','jsonlite','tseries'), dependencies=TRUE)
 
 WORKDIR /home
 
-RUN useradd -m nonroot
+ARG AGENT_DIR=/home/agent
+ENV AGENT_DIR=${AGENT_DIR}
+ENV CONDA_ENV_NAME=${CONDA_ENV_NAME}
+
+RUN mkdir -p /home/logs /home/submission /home/artifacts /home/data ${AGENT_DIR}
+
+ENTRYPOINT ["tail", "-f", "/dev/null"]
