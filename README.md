@@ -32,8 +32,9 @@ Execute the benchmark and put results to `python/submission/results.txt`:
 `docker compose run bench_python    # to enable non-blocking mode add -d`
 
 ## Run
-1) add lang tasts to competitions/tasks/
-2) add data for tasks to data/
+1) install uv manager and run uv sync
+2) add lang tasts to competitions/tasks/
+3) add data for tasks to data/
 ## TODO
 
 - [ ] Рефактор
