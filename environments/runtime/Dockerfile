@@ -25,11 +25,11 @@ RUN apt-get update && apt-get install -y \
 RUN wget -O /tmp/Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh" \
     && bash /tmp/Miniforge3.sh -b -p "/opt/conda" \
     && rm /tmp/Miniforge3.sh
-    
+
 ENV PATH="/opt/conda/bin:$PATH"
 
 ARG CONDA_ENV_NAME=agent
-ARG PYTHON_VERSION=3.13
+ARG PYTHON_VERSION=3.12
 ARG REQUIREMENTS=/tmp/requirements.txt
 
 COPY /environments/runtime/requirements.txt ${REQUIREMENTS}

@@ -132,7 +132,13 @@ def build_runtime(image_name: str, agent_dir: Path, platform: str) -> None:
     type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path),
     help="Agent directory"
 )
-def bench(image_name: str, workers: int, data_dir: Path, runtime_config: Path, log_level: str, logs_dir: Path, competitions: Path, folds: int, seed: int|None, code_variant: str, agent_dir: Path) -> None:
+@click.option(
+    "--network",
+    type=click.STRING,
+    default=None,
+    help="Network name for agent container"
+)
+def bench(image_name: str, workers: int, data_dir: Path, runtime_config: Path, log_level: str, logs_dir: Path, competitions: Path, folds: int, seed: int|None, code_variant: str, agent_dir: Path, network: str|None) -> None:
     """
     Run main benchmark pipline
     """
@@ -148,7 +154,8 @@ def bench(image_name: str, workers: int, data_dir: Path, runtime_config: Path, l
         folds=folds,
         seed=seed,
         code_variant=code_variant,
-        agent_dir=agent_dir.resolve()
+        agent_dir=agent_dir.resolve(),
+        network=network
     )
     setup_logger(runner_spec.log_level, runner_spec.logs_dir, file_log_level=runner_spec.log_level)
     logger.info(f"[blue]Run benchmark with runner spec:\n{runner_spec.model_dump_json(indent=2)}[/blue]")

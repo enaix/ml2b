@@ -11,7 +11,7 @@ from grade_functions import *
 
 # Submission grader code
 # ======================
-def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grader: object, competition_id: str, comp: dict, scores: list, language: str, mono_predict: bool) -> float:
+def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grader: object, competition_id: str, comp: dict, scores: list, language: str, mono_predicts: bool) -> float:
     def cvfold_run(X_train, y_train, X_val, y_val):
         def mono_predict():
             return train_code["train_and_predict"](X_train, y_train, X_val) # Won't the distribution of X_train leak onto X_val?
@@ -25,7 +25,7 @@ def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grade
 
         try:
             # Execute submission code
-            if mono_predict:
+            if mono_predicts:
                 preds = mono_predict()
             else:
                 preds = modular_predict()
@@ -60,7 +60,6 @@ def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grade
         for i, (train_idx, val_idx) in enumerate(kf.split(X)):
             X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
             X_val, y_val = X.iloc[val_idx], y.iloc[val_idx]
-
             cvfold_run(X_train, y_train, X_val, y_val)
 
     # Aggregate results
@@ -69,8 +68,6 @@ def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grade
         common.report_error("Submission code failed for all CV folds")
         common.graceful_shutdown(1)
     return np.mean(valid_scores)
-
-
 
 
 def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_predict: bool, folds: int | None) -> dict:

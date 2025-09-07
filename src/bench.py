@@ -22,7 +22,7 @@ class Language(StrEnum):
     Arab = "Arab"
     Chinese = "Chinese"
     Italian = "Italian"
-    Kazach = "Kazach"
+    Kazakh = "Kazakh"
     Polish = "Polish"
     Romanian = "Romanian"
     Spanish = "Spanish"

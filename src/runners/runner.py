@@ -25,6 +25,8 @@ import json
 import tarfile
 import shutil
 import warnings
+import re
+import os
 warnings.filterwarnings("ignore", category=ResourceWarning)
 
 class RunnerSpec(BaseModel):
@@ -42,6 +44,7 @@ class RunnerSpec(BaseModel):
     seed: int|None
     code_variant: Literal["extended", "short"]
     agent_dir: Path
+    network: str | None
 
 class Task(BaseModel):
     idx: int
@@ -82,18 +85,43 @@ def create_temp_file_with_text(text: str) -> Path:
     return file_path
 
 class AgentSpec(BaseModel):
-    env_vars: dict[str, str] = Field(default_factory=dict)
-    kwargs: dict[str, str] = Field(default_factory=dict)
+    env_vars: dict[str, Any] = Field(default_factory=dict)
+    kwargs: dict[str, Any] = Field(default_factory=dict)
     agent_dir: Path
     start_script: Path
     kwargs_type: Literal["omegaconf", "argparse"]
+
+def get_env(value: str) -> str|None:
+    """Returns the name of the environment variable in the format `${secrets.<name>}`."""
+
+    if not isinstance(value, str):
+        return None
+
+    env_var_pattern = r"\$\{\{\s*secrets\.(\w+)\s*\}\}"
+    match = re.match(env_var_pattern, value)
+
+    if not match:
+        return None
+
+    return match.group(1)
+
+def parse_env_vars(vars: dict[str, Any]) -> dict[str, Any]:
+    for key, var in vars.items():
+        evar_name = get_env(var)
+        if evar_name is not None:
+            evar = os.getenv(evar_name)
+            if evar is None:
+                raise ValueError(f"ENV {evar_name} not set")
+            vars[key] = evar
+    return vars
+
 
 def build_agent_spec(agent_dir: Path) -> AgentSpec:
     agent_dir = agent_dir.resolve()
     with open(agent_dir / "config.yaml", "r") as f:
         content = yaml.safe_load(f)
-    kwargs = content.get("agent_kwargs", {})
-    env_vars = content.get("env_vars", {})
+    kwargs = parse_env_vars(content.get("kwargs", {}))
+    env_vars = parse_env_vars(content.get("env_vars", {}))
     kwargs_type = content.get("kwargs_type", "argparse")
     agent_spec = AgentSpec(
         env_vars=env_vars, 
@@ -102,6 +130,7 @@ def build_agent_spec(agent_dir: Path) -> AgentSpec:
         start_script=agent_dir / content.get("start"),
         kwargs_type=kwargs_type
         )
+    logger.info("Agent spec: {}", agent_spec.model_dump_json(indent=2))
     return agent_spec   
 
 def parse_runtime_config(config_path: Path) -> dict[str, str]:
@@ -155,7 +184,8 @@ class DockerRunner:
             detach=True,
             volumes=volumes,
             environment=self.agent_spec.env_vars,
-            **parse_runtime_config(self.runner_spec.runtime_config)
+            **parse_runtime_config(self.runner_spec.runtime_config),
+            network=self.runner_spec.network
         )
         logger.info("[blue]Created: {}[/blue]", container.name)
         return container
@@ -181,6 +211,7 @@ class DockerRunner:
             command += [f"{key}={value}" for key, value in self.agent_spec.kwargs.items()]
         else:
             raise ValueError("Not the right kwargs type, use (omegaconf/argparse)")
+        logger.info("Run command: {}", command)
         exit_code, output = container.exec_run(command, stream=True, user="root")
         for chunk in output:
             logger.info("[yellow]Container log[/yellow]\n {}", chunk.decode('utf-8').strip())
