@@ -280,11 +280,7 @@ class DockerRunner:
             container.start()
             self.execute(container)
             self.extract_artifacts(container, Path(self.runner_spec.logs_dir / task.unique_name).resolve())
-            for cb in task.success_callbacks:
-                cb({})
         except Exception as e:
-            for cb in task.failure_callbacks:
-                cb({})
             raise e
         finally:
             if container is not None:
@@ -303,7 +299,10 @@ class DockerRunner:
                     task.competition,
                     task.lang,
                     task.codelang,
-                    code
+                    code,
+                    self.client,
+                    task.unique_name,
+                    parse_runtime_config(self.runner_spec.runtime_config)
                 )
             with open(run_dir / "code_results.json", "w", encoding="utf-8") as fp:
                 json.dump(result, fp, indent=2)
@@ -333,7 +332,11 @@ class DockerRunner:
                     task=task,
                     task_out=task_out
                     )
+                for cb in task.success_callbacks:
+                    cb({})
             except Exception as e:
+                for cb in task.failure_callbacks:
+                    cb({})
                 trace = traceback.format_exc()
                 task_out.error = trace
                 logger.error("[red]Task idx: {} crashes with error\n{}[/red]", task.idx, trace)

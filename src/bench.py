@@ -244,15 +244,14 @@ class BenchPipeline:
         return fold
 
 
-    def test_submission_code(self, comp: Competition, lang: Language, codelang: CodeLanguage, code: str) -> dict:
+    def test_submission_code(self, comp: Competition, lang: Language, codelang: CodeLanguage, code: str, client: DockerClient, uniq_suf: str, runtime_config: dict[str, Any]) -> dict:
         """
         Submit the code and return metric
         """
 
         # Prepare submission dir
         # ======================
-
-        submission_dir = os.path.join(str(codelang), "submission")
+        submission_dir = (Path(self.base_path()) / str(codelang) / f"submission_{uniq_suf}").resolve()
         if os.path.exists(submission_dir):
             shutil.rmtree(submission_dir)
         os.mkdir(submission_dir)
@@ -260,27 +259,43 @@ class BenchPipeline:
         if codelang == CodeLanguage.Python:
             with open(os.path.join(submission_dir, "__init__.py"), 'w') as f:
                 f.write("")
-        
+
         with open(os.path.join(submission_dir, CODEPATHS[codelang]), 'w') as f:
             f.write(code)
 
-        result = subprocess.run(
-                ["docker", "compose", "run", "bench_python"],
-                capture_output=True,
-                text=True,
-                env={"COMPETITION_ID": comp.comp_id, "BENCH_LANG": str(lang), "BENCH_MODE": str(BenchMode.ModularPredict), "BENCH_FOLDS_OVERRIDE": str(1)},
-                timeout=60*60
-            )
+        env_vars = {
+            "COMPETITION_ID": comp.comp_id,
+            "BENCH_LANG": str(lang),
+            "BENCH_MODE": str(BenchMode.ModularPredict),
+            "BENCH_FOLDS_OVERRIDE": "1"
+        }
+        network_name = "python_no_inet"
 
-        logger.info("Evaluation container results: {}", result)
-        if result.returncode != 0:
-            logger.info("{} container execution failed: {}", str(codelang), result.stderr)
+        # Проверяем, есть ли сеть
+        networks = [n.name for n in client.networks.list()]
+        if network_name not in networks:
+            client.networks.create(network_name, driver="bridge", internal=True)
+        container = client.containers.run(
+            image=f"mlbench-infra-bench_{str(codelang)}",
+            detach=True,
+            environment=env_vars,
+            volumes={
+                submission_dir.as_posix(): {'bind': '/bench/submission', 'mode': 'rw'},
+                (Path(self.base_path()) / "competitions").resolve().as_posix(): {'bind': '/bench/competitions', 'mode': 'ro'}
+            },
+            network="python_no_inet",
+            user="bench:bench",
+            **runtime_config
+        )
+        exit_code = container.wait(timeout=60*60)
+        logs = container.logs().decode('utf-8')
 
-        results_path = Path(self.base_path()) / str(codelang) / "submission" / "results.json"
+        logger.info("Evaluation container results:\n exit_code: {}\n logs: {}", exit_code, logs)
+        container.remove() 
+        results_path = submission_dir / "results.json"
         if not os.path.exists(results_path):
             logger.info("{} container failed to generate output", str(codelang))
             return {"errors": [f"Failed to obtain output for {str(codelang)}"], "success": False}
-
         with open(results_path, 'r') as f:
             results = json.load(f)
         return results
