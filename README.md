@@ -34,7 +34,22 @@ Execute the benchmark and put results to `python/submission/results.txt`:
 ## Run
 1) install uv manager and run uv sync
 2) add lang tasts to competitions/tasks/
-3) add data for tasks to data/
+3) add data for tasks to competitions/data/
+4) build agent runtime like
+
+```bash
+#for more information see: python run.py  build-runtime --help
+python run.py  build-runtime -i aide --agent-dir agents/aide
+```
+5) build evaluation container
+```bash
+docker compose build bench_python
+```
+6) run benchmark
+```python
+#for more information see: python run.py bench --help
+python run.py bench -i aide -w 1 --agent-dir agents/aide --network ollama
+```
 ## TODO
 
 - [ ] Рефактор
