@@ -298,6 +298,7 @@ class BenchPipeline:
             return {"errors": [f"Failed to obtain output for {str(codelang)}"], "success": False}
         with open(results_path, 'r') as f:
             results = json.load(f)
+        shutil.rmtree(submission_dir)
         return results
 
 
