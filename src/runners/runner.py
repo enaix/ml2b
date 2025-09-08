@@ -216,7 +216,7 @@ class DockerRunner:
         for chunk in output:
             logger.info("[yellow]Container log[/yellow]\n {}", chunk.decode('utf-8').strip())
 
-    def load_file(self, container: Container, load_dir: str, log_dir:Path) -> None:
+    def load_file(self, container: Container, load_dir: str, log_dir: Path) -> None:
         log_dir.mkdir(exist_ok=True, parents=True)
         try:
             stream, _ = container.get_archive(load_dir)
@@ -227,11 +227,27 @@ class DockerRunner:
                     f.write(chunk)
 
             with tarfile.open(tmp_tar_path, "r") as tar:
-                tar.extractall(path=log_dir)
+                for member in tar.getmembers():
+                    # Если это симлинк или хардлинк — разыменовываем
+                    if member.issym() or member.islnk():
+                        # Симлинк указывает на member.linkname
+                        try:
+                            target = tar.extractfile(member.linkname)
+                        except KeyError:
+                            # Если цель вне архива — пропускаем
+                            continue
+                        if target:
+                            out_path = log_dir / member.name
+                            out_path.parent.mkdir(parents=True, exist_ok=True)
+                            with open(out_path, "wb") as f:
+                                f.write(target.read())
+                    else:
+                        tar.extract(member, path=log_dir)
 
             tmp_tar_path.unlink()
         except Exception as e:
-            logger.error("Error extracting output file: {}", e)
+            logger.error(f"Error extracting output file: {e}")
+
 
     def extract_artifacts(self, container: Container, log_dir: str|Path) -> None:
         #need to implement more flexible path extraction

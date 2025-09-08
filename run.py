@@ -22,7 +22,7 @@ DEFAULT_TAG = "runtime-env"
 BASE_PATH = Path(__file__).parent
 DEFAULT_RUNTIME_PATH = BASE_PATH / "environments" / "runtime"
 DEFAULT_CONFIG_PATH = BASE_PATH / "environments" / "container_config.yaml"
-DEFAULT_DATA_PATH = BASE_PATH / "data"
+DEFAULT_DATA_PATH = BASE_PATH / "competitions" / "data"
 DEFAULT_LOGS_PATH = BASE_PATH / "logs"
 DEFAULT_COMPETITIONS_PATH = BASE_PATH / "competitions"
 

@@ -13,6 +13,7 @@ import pandas as pd
 from sklearn.model_selection import KFold, train_test_split
 import importlib
 from docker import DockerClient
+from loguru import logger
 
 from typing import Any
 
@@ -60,7 +61,7 @@ class BenchMode(StrEnum):
 class Competition:
     def __init__(self, comp_id: str, bench: weakref.ReferenceType, metadata: dict, tasks: dict):
         self.comp_id = comp_id
-        self.comp_path = os.path.join(bench().base_path(), "data", comp_id)
+        self.comp_path = os.path.join(bench().base_path(), "competitions", "data", comp_id)
         self.train_data = os.path.join(self.comp_path, "train.csv")
         self.test_data = os.path.join(self.comp_path, "test.csv")
         self.metadata = metadata
@@ -263,22 +264,21 @@ class BenchPipeline:
         with open(os.path.join(submission_dir, CODEPATHS[codelang]), 'w') as f:
             f.write(code)
 
-
         result = subprocess.run(
-                ["docker", "compose", "run", str(codelang)],
+                ["docker", "compose", "run", "bench_python"],
                 capture_output=True,
                 text=True,
-                env={"COMPETITION_ID": comp.comp_id, "BENCH_LANG": str(lang), "BENCH_MODE": str(BenchMode.ModularPredict)},
+                env={"COMPETITION_ID": comp.comp_id, "BENCH_LANG": str(lang), "BENCH_MODE": str(BenchMode.ModularPredict), "BENCH_FOLDS_OVERRIDE": str(1)},
                 timeout=60*60
             )
 
+        logger.info("Evaluation container results: {}", result)
         if result.returncode != 0:
-            print(f"{str(codelang)} container execution failed: {result.stderr}")
-            self.shutdown(1)
+            logger.info("{} container execution failed: {}", str(codelang), result.stderr)
 
-        results_path = os.path.join(self.base_path(), str(codelang), "submission")
+        results_path = Path(self.base_path()) / str(codelang) / "submission" / "results.json"
         if not os.path.exists(results_path):
-            print(f"{str(codelang)} container failed to generate output")
+            logger.info("{} container failed to generate output", str(codelang))
             return {"errors": [f"Failed to obtain output for {str(codelang)}"], "success": False}
 
         with open(results_path, 'r') as f:
@@ -338,7 +338,7 @@ class BenchPipeline:
 
         # Load data
         try:
-            train = pd.read_csv(os.path.join("data", comp.comp_id, "train.csv"))
+            train = pd.read_csv(Path(self.base_path()) / "competitions" / "data" / comp.comp_id / "train.csv")
             X, y = train.drop(columns=[comp.metadata["target_col"]]), train[comp.metadata["target_col"]]
         except Exception as e:
             print(

@@ -1,6 +1,13 @@
 FROM python:3.12-slim
 
 WORKDIR /bench
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    build-essential \
+    git && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
 

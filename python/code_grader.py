@@ -7,6 +7,7 @@ import sys
 import os
 from glob import glob
 from grade_functions import *
+from pathlib import Path
 
 
 # Submission grader code
@@ -36,9 +37,9 @@ def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grade
             common.report_error(f"Submission code execution failed : {sys.exc_info()}")
             scores.append(np.nan)  # Mark failed folds
 
-    folds_root = f"data/folds/{competition_id}"
-    private_root = f"data/validation/{competition_id}"
-    num_folds = len(p for p in folds_root.iterdir() if p.is_dir() and p.name.startswith("fold_"))
+    folds_root = Path(f"competitions/folds/{competition_id}").resolve()
+    private_root = Path(f"competitions/validation/{competition_id}").resolve()
+    num_folds = len([p for p in folds_root.iterdir() if p.is_dir() and p.name.startswith("fold_")])
     if num_folds == comp["cv_folds"]:
         # Use existing folds
         for i in range(num_folds):
@@ -66,7 +67,7 @@ def autograde_cvfold(X: pd.DataFrame, y: pd.DataFrame, train_code: object, grade
     valid_scores = [s for s in scores if not np.isnan(s)]
     if not valid_scores:
         common.report_error("Submission code failed for all CV folds")
-        common.graceful_shutdown(1)
+        common.graceful_exit(1)
     return np.mean(valid_scores)
 
 
@@ -75,11 +76,11 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
     Executes LLM-generated code, computes CV scores, and returns metrics.
     """
     # Load competition config
-    if not os.path.exists("data/competitions.json"):
-        common.report_error("Could not find data/competitions.json")
+    if not os.path.exists("competitions/competitions.json"):
+        common.report_error("Could not find competitions/competitions.json")
         common.graceful_exit(1)
 
-    with open("data/competitions.json", 'r') as f:
+    with open("competitions/competitions.json", 'r') as f:
         comp = json.load(f).get(competition_id)
 
     if comp is None:
@@ -94,10 +95,10 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
 
     # Load data
     try:
-        train = pd.read_csv(f"data/{competition_id}/train.csv")  # Data should be mounted in this format
+        train = pd.read_csv(f"competitions/data/{competition_id}/train.csv")  # Data should be mounted in this format
         X, y = train.drop(columns=[comp["target_col"]]), train[comp["target_col"]]
     except Exception as e:
-        common.report_error(f"grade_llm_code() : internal error : data loading failed: {e=} (file data/{competition_id}/train.csv)")
+        common.report_error(f"grade_llm_code() : internal error : data loading failed: {e=} (file competitions/data/{competition_id}/train.csv)")
         common.graceful_exit(1)
 
     scores = []
