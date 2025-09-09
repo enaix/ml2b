@@ -38,8 +38,16 @@
         "metric": "root_mean_squared_error",
         "target_col": "UltimateIncurredClaimCost",
         "direction": "minimize",
-        "cv_folds": 3,
-        "output_hint": "predicted total claims payments (floats >= 0)"
+        "cv_folds": 1,
+        "output_hint": "predicted total claims payments (floats >= 0)",
+        "files": {
+	      "train": {"type": "data", "required": true, "extensions": [".csv"]},
+	      "test": {"type": "data", "required": false, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+	      "train": {"filename": "train.csv", "type": "data", "required": true},
+	      "test": {"filename": "test.csv", "type": "data", "required": false}
+        }
     },
     "she-hacks-2021": {
         "metric": "root_mean_squared_error",
@@ -89,5 +97,50 @@
         "direction": "maximize",
         "cv_folds": 3,
         "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+
+    
+    "prml-data-contest-nov-2020": {
+        "target_col": "like",
+        "grader": "prml_nov2020", 
+        "metric": "map_at_k",
+        "map_k": 10,
+        "cv_folds": 2,
+        "split_strategy": "recommendation",
+        "stratified_split": false,
+        "description": "Tour recommendation system - predict which tours bikers will like",
+        "task_type": "recommendation",
+        "evaluation_details": {
+          "primary_metric": "MAP@10",
+          "metric_direction": "maximize",
+          "description": "Mean Average Precision at K=10 for tour recommendations"
+        },
+        "files": {
+          "train": {"type": "data", "required": true, "extensions": [".csv"]},
+          "test": {"type": "data", "required": false, "extensions": [".csv"]},
+          "tour_convoy": {"type": "data", "required": false, "extensions": [".csv"]},
+          "bikers": {"type": "data", "required": false, "extensions": [".csv"]}, 
+          "tours": {"type": "data", "required": false, "extensions": [".csv"]},
+          "bikers_network": {"type": "data", "required": false, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+          "train": {"filename": "train.csv", "type": "data", "required": true},
+          "test": {"filename": "test.csv", "type": "data", "required": false},
+          "tour_convoy": {"filename": "tour_convoy.csv", "type": "data", "required": false},
+          "bikers": {"filename": "bikers.csv", "type": "data", "required": false},
+          "tours": {"filename": "tours.csv", "type": "data", "required": false},
+          "bikers_network": {"filename": "bikers_network.csv", "type": "data", "required": false}
+        },
+        "data_description": {
+          "train_columns": ["biker_id", "tour_id", "invited", "timestamp", "like", "dislike"],
+          "test_columns": ["biker_id", "tour_id", "invited", "timestamp"],
+          "prediction_format": "Rankings or scores for each (biker_id, tour_id) pair",
+          "notes": [
+            "like=1 indicates biker liked the tour (positive feedback)",
+            "dislike=1 indicates biker disliked the tour (negative feedback)", 
+            "Both like=0 and dislike=0 means no response (neutral/unknown)",
+            "Additional data files provide rich features about bikers, tours, and social networks"
+          ]
+        }
     }
 }
