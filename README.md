@@ -48,7 +48,7 @@ docker compose build bench_python
 6) run benchmark
 ```python
 #for more information see: python run.py bench --help
-python run.py bench -i aide -w 1 --agent-dir agents/aide --network ollama
+python run.py bench -i aide -w 6 --agent-dir agents/aide --network ollama
 ```
 ## TODO
 

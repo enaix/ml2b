@@ -212,7 +212,7 @@ class DockerRunner:
         else:
             raise ValueError("Not the right kwargs type, use (omegaconf/argparse)")
         logger.info("Run command: {}", command)
-        exit_code, output = container.exec_run(command, stream=True, user="root")
+        exit_code, output = container.exec_run(command, stream=True, user="nonroot")
         for chunk in output:
             logger.info("[yellow]Container log[/yellow]\n {}", chunk.decode('utf-8').strip())
 
@@ -302,7 +302,8 @@ class DockerRunner:
                     code,
                     self.client,
                     task.unique_name,
-                    parse_runtime_config(self.runner_spec.runtime_config)
+                    parse_runtime_config(self.runner_spec.runtime_config),
+                    self.runner_spec.image_name
                 )
             with open(run_dir / "code_results.json", "w", encoding="utf-8") as fp:
                 json.dump(result, fp, indent=2)

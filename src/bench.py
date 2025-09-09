@@ -7,6 +7,7 @@ import json
 import subprocess
 from pathlib import Path
 import shutil
+import docker
 
 import numpy as np
 import pandas as pd
@@ -244,7 +245,7 @@ class BenchPipeline:
         return fold
 
 
-    def test_submission_code(self, comp: Competition, lang: Language, codelang: CodeLanguage, code: str, client: DockerClient, uniq_suf: str, runtime_config: dict[str, Any]) -> dict:
+    def test_submission_code(self, comp: Competition, lang: Language, codelang: CodeLanguage, code: str, client: DockerClient, uniq_suf: str, runtime_config: dict[str, Any], image_name: str) -> dict:
         """
         Submit the code and return metric
         """
@@ -267,7 +268,8 @@ class BenchPipeline:
             "COMPETITION_ID": comp.comp_id,
             "BENCH_LANG": str(lang),
             "BENCH_MODE": str(BenchMode.ModularPredict),
-            "BENCH_FOLDS_OVERRIDE": "1"
+            "BENCH_FOLDS_OVERRIDE": "1",
+            "PYTHONDONTWRITEBYTECODE": "1"
         }
         network_name = "python_no_inet"
 
@@ -276,17 +278,19 @@ class BenchPipeline:
         if network_name not in networks:
             client.networks.create(network_name, driver="bridge", internal=True)
         container = client.containers.run(
-            image=f"mlbench-infra-bench_{str(codelang)}",
+            image=image_name,
             detach=True,
             environment=env_vars,
             volumes={
-                submission_dir.as_posix(): {'bind': '/bench/submission', 'mode': 'rw'},
-                (Path(self.base_path()) / "competitions").resolve().as_posix(): {'bind': '/bench/competitions', 'mode': 'ro'}
+                submission_dir.as_posix(): {'bind': '/home/bench/submission', 'mode': 'rw'},
+                (Path(self.base_path()) / "competitions").resolve().as_posix(): {'bind': '/home/bench/competitions', 'mode': 'ro'}
             },
             network="python_no_inet",
-            user="bench:bench",
-            **runtime_config
+            entrypoint=["mamba", "run", "-n", "agent", "python", "./bench.py"],
+            **runtime_config,
+            working_dir="/home/bench"
         )
+
         exit_code = container.wait(timeout=60*60)
         logs = container.logs().decode('utf-8')
 

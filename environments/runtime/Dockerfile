@@ -50,12 +50,19 @@ RUN apt-get update && apt-get install -y r-base && rm -rf /var/lib/apt/lists/*
 #R deps example
 RUN R -e "install.packages(c('methods','jsonlite','tseries'), dependencies=TRUE)"
 
-WORKDIR /home
-
 ARG AGENT_DIR=/home/agent
 ENV AGENT_DIR=${AGENT_DIR}
 ENV CONDA_ENV_NAME=${CONDA_ENV_NAME}
 
-RUN mkdir -p /home/logs /home/submission /home/artifacts /home/data ${AGENT_DIR}
+RUN useradd nonroot \
+    && mkdir -p /home/logs /home/submission /home/artifacts /home/data ${AGENT_DIR} \
+    && chown -R nonroot:nonroot /home/logs /home/submission /home/artifacts /home/data ${AGENT_DIR}
+
+#add bench user
+RUN useradd -m -U -s /bin/bash bench
+WORKDIR /home/bench
+COPY --chown=bench:bench python/*.py ./
+
+WORKDIR /home
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]
