@@ -190,7 +190,7 @@ class CSVDataSplitter(DataSplitter):
 
         # Use train_test_split for a single 80:20 split
         if n_splits != 1:
-            print(f"Warning: train_test_split only supports 1 split (80:20). Using n_splits=1 instead of {n_splits}")
+            self.log_error(f"Warning: train_test_split only supports 1 split (80:20). Using n_splits=1 instead of {n_splits}")
 
         # Perform the 80:20 split
         X_train, X_val, y_train, y_val = train_test_split(
@@ -391,8 +391,8 @@ class RecommendationDataSplitter(DataSplitter):
         # Check if this is a recommendation system
         required_cols = ['biker_id', 'tour_id']
         if not all(col in train_df.columns for col in required_cols):
-            print(f"Warning: Expected columns {required_cols} for recommendation splitting")
-            print("Falling back to regular KFold splitting")
+            self.log_error(f"Warning: Expected columns {required_cols} for recommendation splitting")
+            self.log_error("Falling back to regular KFold splitting")
             kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
             return list(kf.split(train_df))
 
@@ -463,7 +463,7 @@ class TimeSeriesDataSplitter(DataSplitter):
         # Get time column from metadata
         time_col = comp.metadata.get("time_col", "timestamp")
         if time_col not in train_df.columns:
-            print(f"Warning: Time column '{time_col}' not found, falling back to regular split")
+            self.log_error(f"Warning: Time column '{time_col}' not found, falling back to regular split")
             kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
             return list(kf.split(train_df))
 

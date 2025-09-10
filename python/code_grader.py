@@ -133,10 +133,10 @@ class ModernGrader:
                         "status": "success"
                     })
                     
-                    print(f"Fold {fold_idx + 1}/{num_folds} completed with score: {fold_score:.4f}")
+                    # self.log_error(f"Fold {fold_idx + 1}/{num_folds} completed with score: {fold_score:.4f}")
                     
                 except Exception as e:
-                    print(f"Fold {fold_idx + 1} failed: {str(e)}")
+                    self.log_error(f"Fold {fold_idx + 1} failed: {str(e)}")
                     scores.append(np.nan)
                     fold_details.append({
                         "fold": fold_idx,
@@ -144,8 +144,8 @@ class ModernGrader:
                         "status": "failed",
                         "error": str(e)
                     })
-                    traceback.print_exc()
-            
+                    self.do_shutdown(1)
+
             # Clean up fold data
             self._cleanup_fold_data(comp)
             
@@ -170,13 +170,8 @@ class ModernGrader:
             
         except Exception as e:
             error_msg = f"Grading failed for competition {competition_id}: {str(e)}"
-            print(error_msg)
-            traceback.print_exc()
-            return {
-                "score": None,
-                "error": error_msg,
-                "success": False
-            }
+            self.log_error(error_msg)
+            self.do_shutdown(1)
 
     def _grade_fold(self, train_code: Dict[str, Callable], train_dataset: Dict[str, Any], 
                    val_features_dataset: Dict[str, Any], val_labels: pd.DataFrame, 
@@ -225,9 +220,8 @@ class ModernGrader:
             return score
             
         except Exception as e:
-            print(f"Error during fold {fold_idx} execution: {str(e)}")
-            traceback.print_exc()
-            raise
+            self.log_error(f"Error during fold {fold_idx} execution: {str(e)}")
+            self.do_shutdown(1)
 
     def _cleanup_fold_data(self, comp: Competition):
         """Clean up temporary fold data"""
