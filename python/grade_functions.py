@@ -35,53 +35,40 @@ METRICS = {
     "balanced_accuracy": balanced_accuracy_score,
 }
 
+# Default grader
+# ==============
 
+def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+    """Default grader using specified metric from competition config"""
+    metric_name = comp.get("metric", "accuracy_score")
+    metric = METRICS.get(metric_name)
 
-# Common definitions
-# ==================
+    if metric is None:
+        common.report_error(f"grader_default() : internal error : metric not found : {metric_name}")
+        common.graceful_exit(1)
 
-import os
-import sys
-import json
+    try:
+        # Handle different input formats
+        if isinstance(pred, pd.DataFrame):
+            pred_values = pred.iloc[:, 0] if pred.shape[1] == 1 else pred.values.flatten()
+        else:
+            pred_values = pred
 
+        if isinstance(val, pd.DataFrame):
+            val_values = val.iloc[:, 0] if val.shape[1] == 1 else val.values.flatten()
+        else:
+            val_values = val
 
-class Results:
-    """
-    Global class which stores and saves results to file.
-    """
-    res = {"errors": [], "success": False}
-    is_in_container = False
+        score = metric(val_values, pred_values)
+        return score
+    except Exception as e:
+        common.report_error(f"Grader execution failed : {sys.exc_info()}")
+        return np.nan
 
-    def write(self):
-        with open("submission/results.json", 'w') as f:
-            json.dump(self.res, f)
+    
 
-bench_results = Results()
-
-
-
-def report_error(err: str):
-    print(err)  # log to stdout
-    bench_results.res["errors"].append(err)  # set result flag to the output file
-
-def graceful_exit(status: int):
-    if not bench_results.is_in_container:
-        raise BaseException  # Allow top-level code to catch this
-
-    bench_results.res["success"] = status == 0
-    bench_results.write()  # write results to file
-    sys.exit(status)
-
-def set_bench_info(info: dict):
-    bench_results.res = {**bench_results.res, **info}
-
-def log_results_and_exit(results: dict):
-    bench_results.res = {**bench_results.res, **results}
-    graceful_exit(0)
-
-
-
-
+# Custom graders
+# ==============
 
 def calculate_ap_at_k(y_true_tours: List[int], predicted_ranking: List[int], k: int = None) -> float:
     """
@@ -95,30 +82,31 @@ def calculate_ap_at_k(y_true_tours: List[int], predicted_ranking: List[int], k: 
     Returns:
         Average Precision at K score
     """
+    # TODO add try catch
     if not y_true_tours:
         return 0.0
     
     if k is None:
         k = len(predicted_ranking)
-    
+
     # Truncate predictions to k
     predicted_ranking = predicted_ranking[:k]
-    
+
     gtp = len(y_true_tours)  # Ground Truth Positives
     y_true_set = set(y_true_tours)
-    
+
     precision_sum = 0.0
     num_hits = 0
-    
+
     for i, tour_id in enumerate(predicted_ranking, 1):
         if tour_id in y_true_set:
             num_hits += 1
             precision_at_i = num_hits / i
             precision_sum += precision_at_i
-    
+
     if gtp == 0:
         return 0.0
-    
+
     return precision_sum / gtp
 
 
@@ -134,6 +122,7 @@ def calculate_map_at_k(y_true_dict: Dict[int, List[int]], predictions_dict: Dict
     Returns:
         Mean Average Precision at K score
     """
+    # TODO add try catch
     ap_scores = []
     
     for biker_id in y_true_dict:
@@ -151,34 +140,6 @@ def calculate_map_at_k(y_true_dict: Dict[int, List[int]], predictions_dict: Dict
     return np.mean(ap_scores)
 
 
-def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
-    """Default grader using specified metric from competition config"""
-    metric_name = comp.get("metric", "accuracy_score")
-    metric = METRICS.get(metric_name)
-    
-    if metric is None:
-        report_error(f"grader_default() : internal error : metric not found : {metric_name}")
-        graceful_exit(1)
-    
-    try:
-        # Handle different input formats
-        if isinstance(pred, pd.DataFrame):
-            pred_values = pred.iloc[:, 0] if pred.shape[1] == 1 else pred.values.flatten()
-        else:
-            pred_values = pred
-            
-        if isinstance(val, pd.DataFrame):
-            val_values = val.iloc[:, 0] if val.shape[1] == 1 else val.values.flatten()
-        else:
-            val_values = val
-        
-        score = metric(val_values, pred_values)
-        return score
-    except Exception as e:
-        report_error(f"Grader execution failed : {sys.exc_info()}")
-        return np.nan
-
-
 def grader_prml_nov2020(pred: pd.DataFrame, val: pd.DataFrame, comp: dict) -> float:
     """
     Grader for PRML Data Contest Nov 2020 - Tour Recommendation System
@@ -194,7 +155,7 @@ def grader_prml_nov2020(pred: pd.DataFrame, val: pd.DataFrame, comp: dict) -> fl
         # Extract ground truth - tours that bikers actually liked
         # A biker likes a tour if like=1 (and optionally dislike=0)
         if 'like' not in val.columns:
-            report_error("Validation data missing 'like' column")
+            common.report_error("Validation data missing 'like' column")
             return np.nan
         
         # Ground truth: tours where like=1
@@ -223,7 +184,7 @@ def grader_prml_nov2020(pred: pd.DataFrame, val: pd.DataFrame, comp: dict) -> fl
             predictions = pred_sorted.groupby('biker_id')['tour_id'].apply(list).to_dict()
             
         else:
-            report_error(f"Unexpected prediction format. Columns: {pred.columns.tolist()}")
+            common.report_error(f"Unexpected prediction format. Columns: {pred.columns.tolist()}")
             return np.nan
         
         # Get K from competition config
@@ -239,7 +200,8 @@ def grader_prml_nov2020(pred: pd.DataFrame, val: pd.DataFrame, comp: dict) -> fl
         return map_score
         
     except Exception as e:
-        report_error(f"PRML Nov 2020 grader execution failed: {str(e)}")
+        common.report_error(f"PRML Nov 2020 grader execution failed: {str(e)}")
+        # TODO remove ALL print statements
         print(f"Prediction columns: {pred.columns.tolist() if isinstance(pred, pd.DataFrame) else 'Not DataFrame'}")
         print(f"Validation columns: {val.columns.tolist() if isinstance(val, pd.DataFrame) else 'Not DataFrame'}")
         print(f"Prediction shape: {pred.shape if hasattr(pred, 'shape') else 'No shape'}")
@@ -268,14 +230,14 @@ def grader_binary_classification_from_ranking(pred: pd.DataFrame, val: pd.DataFr
             pred_binary['rank'] = pred_binary.groupby('biker_id')['score'].rank(method='first', ascending=False)
             pred_binary['pred_like'] = (pred_binary['rank'] <= k_threshold).astype(int)
         else:
-            report_error("Cannot convert predictions to binary format")
+            common.report_error("Cannot convert predictions to binary format")
             return np.nan
         
         # Merge with validation data
         merged = pd.merge(pred_binary, val, on=['biker_id', 'tour_id'], how='inner')
         
         if len(merged) == 0:
-            report_error("No matching records between predictions and validation")
+            common.report_error("No matching records between predictions and validation")
             return np.nan
         
         # Calculate binary classification metrics
@@ -298,7 +260,7 @@ def grader_binary_classification_from_ranking(pred: pd.DataFrame, val: pd.DataFr
         return score
         
     except Exception as e:
-        report_error(f"Binary classification grader failed: {str(e)}")
+        common.report_error(f"Binary classification grader failed: {str(e)}")
         return np.nan
 
 

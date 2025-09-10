@@ -8,7 +8,6 @@ import subprocess
 from pathlib import Path
 import shutil
 import docker
-from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 
 import numpy as np
@@ -62,453 +61,8 @@ class BenchMode(StrEnum):
     ModularPredict = "MODULAR_PREDICT"
 
 
-class DataSplitter(ABC):
-    """Abstract base class for data splitting strategies"""
-    
-    @abstractmethod
-    def split_data(self, comp: 'Competition', n_splits: int) -> List[Tuple[Any, Any]]:
-        """Return list of (train_indices, val_indices) tuples"""
-        pass
-    
-    @abstractmethod
-    def prepare_fold_data(self, comp: 'Competition', train_indices: Any, val_indices: Any, 
-                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
-        """Prepare data for a specific fold. Returns (train_path, val_path, additional_files)"""
-        pass
 
 
-class CSVDataSplitter(DataSplitter):
-    """Standard CSV data splitter using train_test_split with 80:20 ratio"""
-    
-    def split_data(self, comp: 'Competition', n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
-        """Split data using train_test_split with 80:20 ratio"""
-        train_file = comp.get_file("train")
-        if not train_file or not train_file.exists():
-            raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
-        
-        train_df = pd.read_csv(train_file.path)
-        target_col = comp.metadata.get("target_col")
-        if not target_col:
-            raise ValueError(f"No target_col specified in metadata for competition {comp.comp_id}")
-        
-        X = train_df.drop(columns=[target_col])
-        y = train_df[target_col]
-        
-        # Use train_test_split for a single 80:20 split
-        if n_splits != 1:
-            print(f"Warning: train_test_split only supports 1 split (80:20). Using n_splits=1 instead of {n_splits}")
-        
-        # Perform the 80:20 split
-        X_train, X_val, y_train, y_val = train_test_split(
-            X, y, 
-            test_size=0.2,
-            random_state=42,
-            shuffle=True,
-            stratify=y if comp.metadata.get("stratified_split", False) else None
-        )
-        
-        # Convert to indices for compatibility
-        train_indices = X_train.index.values
-        val_indices = X_val.index.values
-        
-        return [(train_indices, val_indices)]
-    
-    def prepare_fold_data(self, comp: 'Competition', train_indices: np.ndarray, val_indices: np.ndarray,
-                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
-        """Prepare fold data and save to appropriate directories"""
-        train_file = comp.get_file("train")
-        train_df = pd.read_csv(train_file.path)
-        target_col = comp.metadata["target_col"]
-        
-        # Split data using the provided indices
-        X, y = train_df.drop(columns=[target_col]), train_df[target_col]
-        X_train, y_train = X.iloc[train_indices], y.iloc[train_indices]
-        X_val, y_val = X.iloc[val_indices], y.iloc[val_indices]
-        
-        # Save fold data
-        train_fold = pd.concat([X_train, y_train], axis=1)
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
-        
-        train_fold.to_csv(train_path, index=False)
-        X_val.to_csv(x_val_path, index=False)
-        y_val.to_csv(y_val_path, index=False)
-        
-        return train_path, x_val_path, {}
-
-
-class ImageFolderDataSplitter(DataSplitter):
-    """Data splitter for image classification with folder structure"""
-    
-    def split_data(self, comp: 'Competition', n_splits: int) -> List[Tuple[List[str], List[str]]]:
-        """Split image data using folder structure"""
-        train_images_dir = None
-        train_csv_path = None
-        
-        # Look for train images directory or CSV
-        for file_key, comp_file in comp.get_all_files().items():
-            if "train" in file_key.lower() and os.path.isdir(comp_file.path):
-                train_images_dir = comp_file.path
-            elif file_key == "train" and comp_file.path.endswith('.csv'):
-                train_csv_path = comp_file.path
-        
-        if not train_images_dir and not train_csv_path:
-            raise FileNotFoundError(f"No train images directory or CSV found for competition {comp.comp_id}")
-        
-        # Strategy 1: CSV with image paths and labels
-        if train_csv_path and os.path.exists(train_csv_path):
-            df = pd.read_csv(train_csv_path)
-            image_col = comp.metadata.get("image_col", "image")
-            target_col = comp.metadata.get("target_col", "label")
-            
-            if image_col not in df.columns or target_col not in df.columns:
-                image_col, target_col = df.columns[0], df.columns[1]
-            
-            images = df[image_col].tolist()
-            labels = df[target_col].tolist()
-            
-            # Use stratified split for classification
-            if comp.metadata.get("stratified_split", True):
-                skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-                return [(
-                    [images[i] for i in train_idx],
-                    [images[i] for i in val_idx]
-                ) for train_idx, val_idx in skf.split(images, labels)]
-            else:
-                kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-                return [(
-                    [images[i] for i in train_idx],
-                    [images[i] for i in val_idx]
-                ) for train_idx, val_idx in kf.split(images)]
-        
-        # Strategy 2: Folder structure (class folders)
-        elif train_images_dir:
-            all_images = []
-            all_labels = []
-            
-            # Walk through class directories
-            for class_name in os.listdir(train_images_dir):
-                class_dir = os.path.join(train_images_dir, class_name)
-                if os.path.isdir(class_dir):
-                    for img_file in os.listdir(class_dir):
-                        if img_file.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tiff')):
-                            all_images.append(os.path.join(class_dir, img_file))
-                            all_labels.append(class_name)
-            
-            # Stratified split by default for image classification
-            if comp.metadata.get("stratified_split", True):
-                skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-                return list(skf.split(all_images, all_labels))
-            else:
-                kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-                return list(kf.split(all_images))
-        
-        raise ValueError(f"Could not determine image data structure for competition {comp.comp_id}")
-    
-    def prepare_fold_data(self, comp: 'Competition', train_indices: List[str], val_indices: List[str],
-                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
-        """Prepare image fold data with directory structure"""
-        # Create fold-specific directories
-        fold_train_dir = os.path.join(fold_dir, f"train_images_{fold_idx}")
-        fold_val_dir = os.path.join(fold_dir, f"val_images_{fold_idx}")
-        os.makedirs(fold_train_dir, exist_ok=True)
-        os.makedirs(fold_val_dir, exist_ok=True)
-        
-        # Create CSV files with image paths and labels
-        train_csv_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        val_csv_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        val_labels_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
-        
-        # Prepare training data
-        train_data = []
-        for idx in train_indices:
-            if isinstance(idx, str):
-                img_path = idx
-                label = self._extract_label_from_path(img_path)
-                
-                # Copy image to fold directory
-                img_name = os.path.basename(img_path)
-                fold_img_path = os.path.join(fold_train_dir, img_name)
-                shutil.copy2(img_path, fold_img_path)
-                
-                train_data.append({
-                    'image': os.path.relpath(fold_img_path, fold_dir),
-                    'label': label
-                })
-        
-        # Prepare validation data
-        val_data = []
-        val_labels = []
-        for idx in val_indices:
-            if isinstance(idx, str):
-                img_path = idx
-                label = self._extract_label_from_path(img_path)
-                
-                img_name = os.path.basename(img_path)
-                fold_img_path = os.path.join(fold_val_dir, img_name)
-                shutil.copy2(img_path, fold_img_path)
-                
-                val_data.append({
-                    'image': os.path.relpath(fold_img_path, fold_dir)
-                })
-                val_labels.append({'label': label})
-        
-        # Save CSV files
-        pd.DataFrame(train_data).to_csv(train_csv_path, index=False)
-        pd.DataFrame(val_data).to_csv(val_csv_path, index=False)
-        pd.DataFrame(val_labels).to_csv(val_labels_path, index=False)
-        
-        additional_files = {
-            'train_images': fold_train_dir,
-            'val_images': fold_val_dir
-        }
-        
-        return train_csv_path, val_csv_path, additional_files
-    
-    def _extract_label_from_path(self, img_path: str) -> str:
-        """Extract label from image path (assumes parent directory is class name)"""
-        return os.path.basename(os.path.dirname(img_path))
-
-
-class RecommendationDataSplitter(DataSplitter):
-    """Custom data splitter for recommendation systems"""
-    
-    def split_data(self, comp: 'Competition', n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
-        """Split data by users to avoid data leakage"""
-        train_file = comp.get_file("train")
-        if not train_file or not train_file.exists():
-            raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
-        
-        train_df = pd.read_csv(train_file.path)
-        
-        # Check if this is a recommendation system
-        required_cols = ['biker_id', 'tour_id']
-        if not all(col in train_df.columns for col in required_cols):
-            print(f"Warning: Expected columns {required_cols} for recommendation splitting")
-            print("Falling back to regular KFold splitting")
-            kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-            return list(kf.split(train_df))
-        
-        # Use GroupKFold to ensure each user is in only one fold
-        group_kf = GroupKFold(n_splits=n_splits)
-        dummy_X = np.arange(len(train_df))
-        groups = train_df['biker_id'].values
-        
-        return list(group_kf.split(dummy_X, groups=groups))
-    
-    def prepare_fold_data(self, comp: 'Competition', train_indices: np.ndarray, val_indices: np.ndarray,
-                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
-        """Prepare recommendation data for a specific fold"""
-        train_file = comp.get_file("train")
-        train_df = pd.read_csv(train_file.path)
-        
-        # Split by indices
-        train_fold = train_df.iloc[train_indices].copy()
-        val_fold = train_df.iloc(val_indices).copy()
-        
-        # Save training data
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        train_fold.to_csv(train_path, index=False)
-        
-        # For validation: create X_val and y_val
-        target_col = comp.metadata.get("target_col", "like")
-        
-        if target_col in val_fold.columns:
-            target_cols_to_drop = [target_col]
-            if target_col == "like" and "dislike" in val_fold.columns:
-                target_cols_to_drop.append("dislike")
-            elif target_col == "dislike" and "like" in val_fold.columns:
-                target_cols_to_drop.append("like")
-            
-            val_features = val_fold.drop(columns=target_cols_to_drop).copy()
-            y_val_cols = ['biker_id', 'tour_id'] + [col for col in target_cols_to_drop if col in val_fold.columns]
-            val_labels = val_fold[y_val_cols].copy()
-        else:
-            val_features = val_fold.copy()
-            val_labels = pd.DataFrame()
-        
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
-        
-        val_features.to_csv(x_val_path, index=False)
-        val_labels.to_csv(y_val_path, index=False)
-        
-        return train_path, x_val_path, {}
-
-
-class TimeSeriesDataSplitter(DataSplitter):
-    """Time series data splitter that respects temporal order"""
-    
-    def split_data(self, comp: 'Competition', n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
-        """Split time series data maintaining temporal order"""
-        train_file = comp.get_file("train")
-        if not train_file or not train_file.exists():
-            raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
-        
-        train_df = pd.read_csv(train_file.path)
-        
-        # Get time column from metadata
-        time_col = comp.metadata.get("time_col", "timestamp")
-        if time_col not in train_df.columns:
-            print(f"Warning: Time column '{time_col}' not found, falling back to regular split")
-            kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-            return list(kf.split(train_df))
-        
-        # Sort by time
-        train_df = train_df.sort_values(time_col).reset_index(drop=True)
-        
-        # Time-based splitting
-        splits = []
-        total_len = len(train_df)
-        
-        # Use expanding window approach
-        for i in range(n_splits):
-            train_end = int(total_len * (i + 1) / (n_splits + 1))
-            val_start = train_end
-            val_end = min(int(total_len * (i + 2) / (n_splits + 1)), total_len)
-            
-            if val_start >= val_end:
-                break
-                
-            train_indices = np.arange(train_end)
-            val_indices = np.arange(val_start, val_end)
-            splits.append((train_indices, val_indices))
-        
-        return splits
-    
-    def prepare_fold_data(self, comp: 'Competition', train_indices: np.ndarray, val_indices: np.ndarray,
-                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
-        """Prepare time series data maintaining temporal order"""
-        train_file = comp.get_file("train")
-        train_df = pd.read_csv(train_file.path)
-        
-        # Sort by time to ensure proper order
-        time_col = comp.metadata.get("time_col", "timestamp")
-        if time_col in train_df.columns:
-            train_df = train_df.sort_values(time_col).reset_index(drop=True)
-        
-        # Get data for this fold
-        train_data = train_df.iloc[train_indices].copy()
-        val_data = train_df.iloc[val_indices].copy()
-        
-        # Split features and target
-        target_col = comp.metadata.get("target_col")
-        if target_col and target_col in val_data.columns:
-            X_val = val_data.drop(columns=[target_col])
-            y_val = val_data[[target_col]]
-        else:
-            X_val = val_data.copy()
-            y_val = pd.DataFrame()
-        
-        # Save files
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        val_labels_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
-        
-        train_data.to_csv(train_path, index=False)
-        X_val.to_csv(val_path, index=False)
-        y_val.to_csv(val_labels_path, index=False)
-        
-        return train_path, val_path, {}
-
-
-class CustomDataSplitter(DataSplitter):
-    """Custom data splitter for specific competitions"""
-    
-    def __init__(self, split_function: Callable):
-        self.split_function = split_function
-    
-    def split_data(self, comp: 'Competition', n_splits: int) -> List[Tuple[Any, Any]]:
-        return self.split_function(comp, n_splits)
-    
-    def prepare_fold_data(self, comp: 'Competition', train_indices: Any, val_indices: Any,
-                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
-        return self.split_function.prepare_fold_data(comp, train_indices, val_indices, fold_idx, fold_dir, private_dir)
-
-
-# Registry of data splitters
-DATA_SPLITTERS = {
-    "csv": CSVDataSplitter,
-    "image_folder": ImageFolderDataSplitter,
-    "image_classification": ImageFolderDataSplitter,
-    "recommendation": RecommendationDataSplitter,
-    "time_series": TimeSeriesDataSplitter,
-    "custom": CustomDataSplitter,
-}
-
-
-class DataLoader(ABC):
-    """Abstract base class for competition data loading strategies"""
-    
-    @abstractmethod
-    def load_train_data(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
-        """Load training data from hardcoded fold directory"""
-        pass
-    
-    @abstractmethod
-    def load_validation_features(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
-        """Load validation features from hardcoded fold directory"""
-        pass
-    
-    @abstractmethod
-    def load_validation_labels(self, comp: 'Competition', fold_idx: int, base_path: str) -> pd.DataFrame:
-        """Load validation labels from hardcoded private directory"""
-        pass
-    
-    @abstractmethod
-    def get_data_structure(self) -> Dict[str, str]:
-        """Return the expected data structure for this loader"""
-        pass
-
-
-class DefaultDataLoader(DataLoader):
-    """Default data loader with hardcoded paths"""
-    
-    def load_train_data(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
-        """Load training data from hardcoded path"""
-        dataset = {}
-        train_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"train_{fold_idx}.csv")
-        
-        if os.path.exists(train_path):
-            dataset['data'] = pd.read_csv(train_path)
-        else:
-            raise ValueError(f"Train file not found: {train_path}")
-        
-        return dataset
-    
-    def load_validation_features(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
-        """Load validation features from hardcoded path"""
-        dataset = {}
-        val_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"X_val_{fold_idx}.csv")
-        
-        if os.path.exists(val_path):
-            dataset['X_val'] = pd.read_csv(val_path)
-        else:
-            raise ValueError(f"Validation features file not found: {val_path}")
-        
-        return dataset
-    
-    def load_validation_labels(self, comp: 'Competition', fold_idx: int, base_path: str) -> pd.DataFrame:
-        """Load validation labels from hardcoded path"""
-        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"y_val_{fold_idx}.csv")
-        
-        if os.path.exists(y_val_path):
-            return pd.read_csv(y_val_path)
-        else:
-            raise ValueError(f"Validation labels file not found: {y_val_path}")
-    
-    def get_data_structure(self) -> Dict[str, str]:
-        return {
-            'data': 'Training data with features and target',
-            'X_val': 'Validation features without target',
-        }
-
-
-# Registry of data loaders
-DATA_LOADERS = {
-    "default": DefaultDataLoader,
-}
 
 
 class CompetitionFile:
@@ -541,6 +95,7 @@ class Competition:
         self.bench = bench
         self.tasks = tasks
         self.grading_stage = grading_stage
+        self.files = None
         
         # Set competition path based on stage
         if grading_stage:
@@ -549,11 +104,16 @@ class Competition:
             self.comp_path = os.path.join(bench().base_path(), "competitions", "data", comp_id)
         
         # Initialize files based on metadata or discovery
-        self.files = self._initialize_files()
+        # self.files = self._initialize_files()
         
         # Validate files unless we're in grading stage
-        if not grading_stage:
-            self._validate_files()
+        # if not grading_stage:
+        #     self._validate_files()
+
+    def initialize_files(self, files) -> None:
+        """Set competition files"""
+        self.files = files
+
 
     def _initialize_files(self) -> Dict[str, CompetitionFile]:
         """Initialize competition files from metadata or by discovery"""
@@ -831,11 +391,8 @@ class BenchPipeline:
             comp_data = json.load(f)
 
         tasks_dir = os.path.join(self.base_path(), "competitions", "tasks")
-        
-        # Handle tasks directory
-        self._languages = [Language.English]
-        tasks = {Language.English: []}
-        
+
+
         if os.path.exists(tasks_dir):
             language_files = os.listdir(tasks_dir)
             self._languages = []
@@ -853,6 +410,9 @@ class BenchPipeline:
                 df = pd.read_csv(file_path)
                 tasks[lang] = df.to_dict('records')
         else:
+            # Handle tasks directory
+            self._languages = [Language.English]
+            tasks = {Language.English: []}
             print(f"Note: Tasks directory not found at {tasks_dir}. Using default English setup.")
         
         # Process each competition
@@ -885,6 +445,7 @@ class BenchPipeline:
 
     def _load_graders(self) -> None:
         """Load grading functions module"""
+        # TODO import this code the usual way
         grader_path = os.path.join(self.base_path(), "python", "grade_functions.py")
         spec = importlib.util.spec_from_file_location("grade_functions", grader_path)
         self.grader_module = importlib.util.module_from_spec(spec)
@@ -932,6 +493,8 @@ class BenchPipeline:
         """
         Submit the code and return metric
         """
+
+        # TODO refactor this
 
         # Prepare submission dir
         # ======================
@@ -1085,6 +648,9 @@ class BenchPipeline:
             shutil.rmtree(fold_dir)
         if os.path.exists(private_dir):
             shutil.rmtree(private_dir)
+
+
+    # TODO remove dead code
 
     def register_custom_splitter(self, name: str, splitter_class: type):
         """Register a custom data splitter"""
