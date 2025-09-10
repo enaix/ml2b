@@ -17,6 +17,11 @@ import importlib
 from docker import DockerClient
 from loguru import logger
 
+from python.competition import *
+from python.dataloaders import *
+from python.splitters import *
+
+
 class Language(StrEnum):
     English = "English"
     Arab = "Arab"
@@ -59,298 +64,6 @@ class BenchMode(StrEnum):
     """Benchmark operation modes"""
     MonolithicPredict = "MONO_PREDICT"
     ModularPredict = "MODULAR_PREDICT"
-
-
-
-
-
-
-class CompetitionFile:
-    """Represents a single file in a competition"""
-    def __init__(self, name: str, path: str, file_type: str = "data", required: bool = True):
-        self.name = name
-        self.path = path
-        self.file_type = file_type
-        self.required = required
-    
-    def exists(self) -> bool:
-        return os.path.exists(self.path)
-
-
-class Competition:
-    def __init__(self, comp_id: str, bench: weakref.ReferenceType, metadata: dict, tasks: dict, 
-                 grading_stage: bool = False):
-        """
-        Represents a machine learning competition.
-        
-        Args:
-            comp_id: Unique competition identifier
-            bench: Weak reference to the benchmark pipeline
-            metadata: Competition configuration and metadata
-            tasks: Task descriptions for different languages
-            grading_stage: If True, skip file validation (for Docker grading stage)
-        """
-        self.comp_id = comp_id
-        self.metadata = metadata
-        self.bench = bench
-        self.tasks = tasks
-        self.grading_stage = grading_stage
-        self.files = None
-        
-        # Set competition path based on stage
-        if grading_stage:
-            self.comp_path = os.path.join('/bench/data/', "data", comp_id)
-        else:
-            self.comp_path = os.path.join(bench().base_path(), "competitions", "data", comp_id)
-        
-        # Initialize files based on metadata or discovery
-        # self.files = self._initialize_files()
-        
-        # Validate files unless we're in grading stage
-        # if not grading_stage:
-        #     self._validate_files()
-
-    def initialize_files(self, files) -> None:
-        """Set competition files"""
-        self.files = files
-
-
-    def _initialize_files(self) -> Dict[str, CompetitionFile]:
-        """Initialize competition files from metadata or by discovery"""
-        files = {}
-        
-        # Get file configuration from metadata
-        file_config = self.metadata.get("files", {
-            "train": {"type": "data", "required": True, "extensions": [".csv"]},
-        })
-        
-        # First, try to use explicit file mapping from metadata
-        explicit_files = self.metadata.get("file_mapping", {})
-        for file_key, file_info in explicit_files.items():
-            file_path = os.path.join(self.comp_path, file_info["filename"])
-            files[file_key] = CompetitionFile(
-                name=file_key,
-                path=file_path,
-                file_type=file_info.get("type", "data"),
-                required=file_info.get("required", True)
-            )
-        
-        # If no explicit mapping, discover files based on configuration
-        if not explicit_files:
-            for file_key, config in file_config.items():
-                file_found = False
-                for ext in config.get("extensions", [".csv"]):
-                    potential_path = os.path.join(self.comp_path, f"{file_key}{ext}")
-                    
-                    # Only check existence if we're not in grading stage
-                    if not self.grading_stage:
-                        file_exists = os.path.exists(potential_path)
-                    else:
-                        file_exists = True
-                    
-                    if file_exists:
-                        files[file_key] = CompetitionFile(
-                            name=file_key,
-                            path=potential_path,
-                            file_type=config.get("type", "data"),
-                            required=config.get("required", True)
-                        )
-                        file_found = True
-                        break
-                
-                # If required file not found and we're not in grading stage, create entry for validation
-                if not file_found and config.get("required", True) and not self.grading_stage:
-                    potential_path = os.path.join(self.comp_path, f"{file_key}.csv")
-                    files[file_key] = CompetitionFile(
-                        name=file_key,
-                        path=potential_path,
-                        file_type=config.get("type", "data"),
-                        required=True
-                    )
-        
-        # Discover additional files
-        if os.path.exists(self.comp_path) or self.grading_stage:
-            for item in os.listdir(self.comp_path):
-                item_path = os.path.join(self.comp_path, item)
-                
-                # Skip if we're not in grading stage and path doesn't exist
-                if not self.grading_stage and not os.path.exists(item_path):
-                    continue
-                
-                if os.path.isfile(item_path):
-                    filename = item
-                    if self._is_submission_file(filename):
-                        continue
-                    
-                    file_key = os.path.splitext(filename)[0]
-                    if file_key not in files:
-                        file_type = self._infer_file_type(filename)
-                        if file_type in ["data", "metadata"]:
-                            files[file_key] = CompetitionFile(
-                                name=file_key,
-                                path=item_path,
-                                file_type=file_type,
-                                required=False
-                            )
-                
-                elif os.path.isdir(item_path):
-                    dir_name = item
-                    if not self._is_submission_dir(dir_name):
-                        files[dir_name] = CompetitionFile(
-                            name=dir_name,
-                            path=item_path,
-                            file_type="data",
-                            required=False
-                        )
-        
-        return files
-    
-    def _is_submission_dir(self, dirname: str) -> bool:
-        """Check if a directory is submission-related"""
-        dirname_lower = dirname.lower()
-        submission_keywords = ["submission", "sample", "baseline", "example"]
-        return any(keyword in dirname_lower for keyword in submission_keywords)
-
-    def _is_submission_file(self, filename: str) -> bool:
-        """Check if a file is submission-related"""
-        filename_lower = filename.lower()
-        submission_keywords = [
-            "sample_submission", "samplesubmission", "submission", 
-            "submit", "example_submission", "baseline"
-        ]
-        return any(keyword in filename_lower for keyword in submission_keywords)
-    
-    def _infer_file_type(self, filename: str) -> str:
-        """Infer file type from filename"""
-        filename_lower = filename.lower()
-        
-        if filename_lower.endswith(('.csv', '.json', '.parquet', '.pkl', '.pickle', '.h5', '.hdf5')):
-            return "data"
-        elif filename_lower.endswith(('.txt', '.md', '.json', '.xml', '.yml', '.yaml')):
-            if any(word in filename_lower for word in ["description", "readme", "info", "meta"]):
-                return "metadata"
-            else:
-                return "data"
-        elif filename_lower.endswith(('.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.gif')):
-            return "data"
-        elif filename_lower.endswith(('.npy', '.npz', '.mat')):
-            return "data"
-        else:
-            return "other"
-    
-    def _validate_files(self) -> None:
-        """Validate that all required files exist"""
-        missing_files = []
-        for file_key, comp_file in self.files.items():
-            if comp_file.required and not comp_file.exists():
-                missing_files.append(f"{file_key} ({comp_file.path})")
-        
-        if missing_files:
-            error_msg = f"Competition {self.comp_id}: missing required files: {', '.join(missing_files)}"
-            if self.bench() is not None:
-                self.bench().shutdown(1)
-            else:
-                raise FileNotFoundError(error_msg)
-    
-    def get_file(self, file_key: str) -> Optional[CompetitionFile]:
-        """Get a specific file by key"""
-        return self.files.get(file_key)
-    
-    def get_files_by_type(self, file_type: str) -> List[CompetitionFile]:
-        """Get all files of a specific type"""
-        return [f for f in self.files.values() if f.file_type == file_type]
-    
-    def get_all_files(self) -> Dict[str, CompetitionFile]:
-        """Get all files in the competition"""
-        return self.files.copy()
-    
-    def get_data_files(self) -> Dict[str, str]:
-        """Get all data files as a dict of {name: path}"""
-        data_files = {}
-        for file_key, comp_file in self.files.items():
-            if comp_file.file_type in ["data", "metadata"] and comp_file.exists():
-                data_files[file_key] = comp_file.path
-        return data_files
-
-    def get_data_loader(self, loader_name: Optional[str] = None) -> DataLoader:
-        """Get the appropriate data loader for this competition"""
-        if loader_name is None:
-            loader_name = self.metadata.get('data_loader', 'default')
-        
-        loader_class = DATA_LOADERS.get(loader_name, DefaultDataLoader)
-        return loader_class()
-
-    def get_available_languages(self) -> list[Language]:
-        """Get available languages for this competition"""
-        return list(self.tasks.keys())
-
-    def _get_meta_for_lang(self, lang: Language) -> dict:
-        """Get metadata for a specific language"""
-        values = self.tasks.get(lang)
-        if values is None:
-            print(f"Competition: could not find metadata for language {lang}")
-            self.bench().shutdown(1)
-        return values
-
-    def get_description(self, lang: Language) -> dict:
-        """Get description for a specific language"""
-        return self._get_meta_for_lang(lang).get("description")
-
-    def get_data_card(self, lang: Language) -> dict:
-        """Get data card for a specific language"""
-        return self._get_meta_for_lang(lang).get("data_card")
-
-    def get_domain(self, lang: Language) -> dict:
-        """Get domain information for a specific language"""
-        return self._get_meta_for_lang(lang).get("domain")
-
-    def get_metric(self, lang: Language) -> dict:
-        return self._get_meta_for_lang(lang).get("metric")
-
-    def get_code_ext(self, code_lang: CodeLanguage) -> str:
-        return CODE_EXT[code_lang]
-
-    # Legacy properties for backward compatibility
-    @property
-    def train_data(self) -> str:
-        """Get train data path (backward compatibility)"""
-        train_file = self.get_file("train")
-        return train_file.path if train_file else os.path.join(self.comp_path, "train.csv")
-    
-    @property
-    def test_data(self) -> str:
-        """Get test data path (backward compatibility)"""
-        test_file = self.get_file("test")
-        return test_file.path if test_file else os.path.join(self.comp_path, "test.csv")
-
-
-class CompetitionData:
-    """Represents data for a specific competition fold"""
-    def __init__(self, train_path: os.PathLike, val_path: os.PathLike, fold_idx: int = 0, 
-                 additional_files: Dict[str, str] = None):
-        self.train_path = train_path
-        self.val_path = val_path
-        self.fold_idx = fold_idx
-        self.additional_files = additional_files or {}
-
-    def get_train(self) -> os.PathLike:
-        return self.train_path
-
-    def get_val(self) -> os.PathLike:
-        return self.val_path
-    
-    def get_additional_file(self, file_key: str) -> Optional[str]:
-        """Get path to additional file"""
-        return self.additional_files.get(file_key)
-    
-    def get_all_files(self) -> Dict[str, str]:
-        """Get all files including train/val and additional files"""
-        all_files = {
-            "train": str(self.train_path),
-            "val": str(self.val_path)
-        }
-        all_files.update(self.additional_files)
-        return all_files
 
 
 class BenchPipeline:
@@ -440,7 +153,10 @@ class BenchPipeline:
                 print(f"!  warning: competition id {key} : missing in all task descriptions")
                 continue
 
-            self.competitions.append(Competition(key, weakref.ref(self), value, comp_tasks))
+            log_error = lambda x: print(x)
+            do_shutdown = lambda x: self.shutdown(x)
+            competitions_dir = os.path.join(self.base_path(), "competitions")
+            self.competitions.append(Competition(key, value, comp_tasks, competitions_dir, log_error, do_shutdown))
             self.folds[key] = []
 
     def _load_graders(self) -> None:
@@ -587,6 +303,9 @@ class BenchPipeline:
         os.makedirs(comp_fold_dir, exist_ok=True)
         os.makedirs(comp_private_dir, exist_ok=True)
 
+        log_error = lambda x: print(x)
+        do_shutdown = lambda x: self.shutdown(x)
+
         # Get splitting strategy
         split_strategy = comp.metadata.get("split_strategy", "csv")
         splitter_class = DATA_SPLITTERS.get(split_strategy)
@@ -597,7 +316,7 @@ class BenchPipeline:
             self.shutdown(1)
         
         try:
-            splitter = splitter_class()
+            splitter = splitter_class(log_error, do_shutdown, False)
             splits = splitter.split_data(comp, self.total_folds(comp))
         except Exception as e:
             print(f"prepare_train_data(): splitting failed: {e=} for competition {comp.comp_id}")
@@ -650,7 +369,7 @@ class BenchPipeline:
             shutil.rmtree(private_dir)
 
 
-    # TODO remove dead code
+    # TODO remove the following dead code
 
     def register_custom_splitter(self, name: str, splitter_class: type):
         """Register a custom data splitter"""

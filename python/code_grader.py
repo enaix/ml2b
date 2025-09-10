@@ -11,7 +11,6 @@ import shutil
 # Import from our architecture
 from grade_functions import GRADERS
 import common
-from src.bench import Competition, DATA_LOADERS
 
 
 class ModernGrader:
