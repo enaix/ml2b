@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 
-from competition import *
+from .competition import *
 
 
 class DataSplitter(ABC):
     """Abstract base class for data splitting strategies"""
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         self.log_error = log_error
         self.do_shutdown = do_shutdown
         self.grading_stage = grading_stage
@@ -179,6 +179,8 @@ class CSVDataSplitter(DataSplitter):
         train_file = comp.get_file("train")
         if not train_file or not train_file.exists():
             raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
+
+        # TODO implement multiple target_col
 
         train_df = pd.read_csv(train_file.path)
         target_col = comp.metadata.get("target_col")

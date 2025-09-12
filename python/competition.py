@@ -1,6 +1,22 @@
 from enum import StrEnum
+from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 import os
 
+
+
+
+class Language(StrEnum):
+    English = "English"
+    Arab = "Arab"
+    Chinese = "Chinese"
+    Italian = "Italian"
+    Kazakh = "Kazakh"
+    Polish = "Polish"
+    Romanian = "Romanian"
+    Spanish = "Spanish"
+    Turkish = "Turkish"
+    Belarus = "Belarus"
+    Japanese = "Japanese"
 
 
 class FileTypes(StrEnum):
@@ -8,6 +24,8 @@ class FileTypes(StrEnum):
     Data     = "data"
     Metadata = "metadata"
     Other    = "other"
+
+
 
 
 class CompetitionFile:
@@ -50,20 +68,29 @@ class Competition:
         """Set competition files"""
         self.files = files
 
+    def _check_files_init(self) -> None:
+        if self.files is None:
+            self.log_error("Competition files are not initialized by the splitter")
+            self.shutdown(1)
+
     def get_file(self, file_key: str) -> Optional[CompetitionFile]:
         """Get a specific file by key"""
+        self._check_files_init()
         return self.files.get(file_key)
 
     def get_files_by_type(self, file_type: str) -> List[CompetitionFile]:
         """Get all files of a specific type"""
+        self._check_files_init()
         return [f for f in self.files.values() if f.file_type == file_type]
 
     def get_all_files(self) -> Dict[str, CompetitionFile]:
         """Get all files in the competition"""
+        self._check_files_init()
         return self.files.copy()
 
     def get_data_files(self) -> Dict[str, str]:
         """Get all data files as a dict of {name: path}"""
+        self._check_files_init()
         data_files = {}
         for file_key, comp_file in self.files.items():
             if comp_file.file_type in ["data", "metadata"] and comp_file.exists():
@@ -83,12 +110,12 @@ class Competition:
         """Get available languages for this competition"""
         return list(self.tasks.keys())
 
-    def _get_meta_for_lang(self, lang: Language) -> dict:
+    def _get_meta_for_lang(self, lang: Language) -> dict[Any, Any]:
         """Get metadata for a specific language"""
         values = self.tasks.get(lang)
         if values is None:
             print(f"Competition: could not find metadata for language {lang}")
-            self.bench().shutdown(1)
+            self.shutdown(1)
         return values
 
     def get_description(self, lang: Language) -> dict:
@@ -99,7 +126,7 @@ class Competition:
         """Get data card for a specific language"""
         return self._get_meta_for_lang(lang).get("data_card")
 
-    def get_domain(self, lang: Language) -> dict:
+     def get_domain(self, lang: Language) -> dict:
         """Get domain information for a specific language"""
         return self._get_meta_for_lang(lang).get("domain")
 

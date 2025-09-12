@@ -9,8 +9,9 @@ import traceback
 import shutil
 
 # Import from our architecture
-from grade_functions import GRADERS
+from .grade_functions import GRADERS
 import common
+from .competition import *
 
 
 class ModernGrader:
@@ -344,8 +345,16 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
 
     common.set_bench_info({"grader_competition": competition_id, "grader_language": language})
 
+    log_error = lambda x: common.report_error(x)
+    do_shutdown = lambda x: common.graceful_exit(x)
+
+    # Create competition object for grading stage
+    comp = Competition(competition_id, comp, {}, "data", log_error, do_shutdown)
+
     # Load data
     try:
+        # DATA LOADING GOES HERE
+
         train = pd.read_csv(f"data/{competition_id}/train.csv")  # Data should be mounted in this format
         X, y = train.drop(columns=[comp["target_col"]]), train[comp["target_col"]]
     except Exception as e:

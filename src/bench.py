@@ -22,20 +22,6 @@ from python.dataloaders import *
 from python.splitters import *
 
 
-class Language(StrEnum):
-    English = "English"
-    Arab = "Arab"
-    Chinese = "Chinese"
-    Italian = "Italian"
-    Kazakh = "Kazakh"
-    Polish = "Polish"
-    Romanian = "Romanian"
-    Spanish = "Spanish"
-    Turkish = "Turkish"
-    Belarus = "Belarus"
-    Japanese = "Japanese"
-
-
 class CodeLanguage(StrEnum):
     """Supported programming languages for code generation"""
     Python = "python"
