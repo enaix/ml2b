@@ -427,14 +427,177 @@ class CustomDataSplitter(DataSplitter):
         return self.split_function.prepare_fold_data(comp, train_indices, val_indices, fold_idx, fold_dir, private_dir)
 
 
+
+
+
+class EMNISTDataSplitter(DataSplitter):
+    """Data splitter for EMNIST dataset using fixed 80:20 split with seed 42."""
+    
+    def split_data(self, comp: 'Competition', n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """Split EMNIST data using fixed 80:20 split with stratification."""
+        train_file = comp.get_file("train")
+        if not train_file or not train_file.exists():
+            raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
+        
+        # Load the original .npz file
+        with np.load(train_file.path) as data:
+            images = data['images']
+            labels = data['labels']
+        
+        # Use fixed 80:20 split with seed 42
+        # For image classification, we should use stratified split to maintain class balance
+        train_idx, val_idx = train_test_split(
+            np.arange(len(labels)),
+            test_size=0.2,
+            random_state=42,
+            shuffle=True,
+            stratify=labels
+        )
+        
+        # Return as a list with one split (to maintain interface compatibility)
+        return [(train_idx, val_idx)]
+    
+    def prepare_fold_data(self, comp: 'Competition', train_indices: np.ndarray, val_indices: np.ndarray,
+                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
+        """Prepare fold data for EMNIST dataset and save as .npz files."""
+        train_file = comp.get_file("train")
+        
+        # Load the original data
+        with np.load(train_file.path) as data:
+            images = data['images']
+            labels = data['labels']
+        
+        # Split the data using the provided indices
+        train_images = images[train_indices]
+        train_labels = labels[train_indices]
+        val_images = images[val_indices]
+        val_labels = labels[val_indices]
+        
+        # Save training data for this fold (always fold 0 since we only have one split)
+        train_path = os.path.join(fold_dir, f"train_{fold_idx}.npz")
+        np.savez(train_path, images=train_images, labels=train_labels)
+        
+        # Save validation features
+        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.npz")
+        np.savez(x_val_path, images=val_images)
+        
+        # Save validation labels (private)
+        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.npz")
+        np.savez(y_val_path, labels=val_labels)
+        
+        return train_path, x_val_path, {}
+
+class BikerRecommenderDataSplitter(DataSplitter):
+    """Data splitter for biker tour recommendation system with multiple tables."""
+    
+    def split_data(self, comp: 'Competition', n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """Split recommender data using random splitting."""
+        train_file = comp.get_file("train")
+        if not train_file or not train_file.exists():
+            raise FileNotFoundError("Train file not found")
+        
+        train_df = pd.read_csv(train_file.path)        
+        train_indices, val_indices = train_test_split(
+            train_df.index,
+            test_size=0.2,
+            random_state=42,
+            shuffle=True,
+            stratify=None  # No stratification needed for implicit feedback
+        )
+        return [(train_indices, val_indices)]
+
+    def prepare_fold_data(self, comp: 'Competition', train_indices: np.ndarray, val_indices: np.ndarray,
+                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
+        """Prepare fold data with separate filtering for train and validation meta tables."""
+        additional_files = {}
+        
+        # Load all original tables
+        original_tables = {}
+        tables = ['train', 'tour_convoy', 'bikers', 'tours', 'bikers_network']
+        for table in tables:
+            table_file = comp.get_file(table)
+            if table_file and table_file.exists():
+                original_tables[table] = pd.read_csv(table_file.path)
+        
+        # Get the main splits
+        train_main = original_tables['train'].iloc[train_indices]
+        val_main = original_tables['train'].iloc[val_indices]
+        
+        # Save main splits
+        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
+        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
+        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        
+        train_main.to_csv(train_path, index=False)
+        val_main.drop(columns=['like', 'dislike']).to_csv(x_val_path, index=False)
+        val_main[['biker_id', 'tour_id', 'like', 'dislike']].to_csv(y_val_path, index=False)
+        
+        # === SEPARATE FILTERING FOR TRAIN AND VALIDATION META TABLES ===
+        
+        # 1. FILTER FOR TRAINING META TABLES (only training entities)
+        train_bikers = set(train_main['biker_id'].unique())
+        train_tours = set(train_main['tour_id'].unique())
+        
+        for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
+            if table in original_tables:
+                train_meta = self._filter_meta_table(original_tables[table], table, train_bikers, train_tours)
+                train_meta_path = os.path.join(fold_dir, f"{table}_train_{fold_idx}.csv")
+                train_meta.to_csv(train_meta_path, index=False)
+                additional_files[f"{table}_train"] = train_meta_path
+        
+        # 2. FILTER FOR VALIDATION META TABLES (only validation entities)
+        val_bikers = set(val_main['biker_id'].unique())  # ONLY validation bikers
+        val_tours = set(val_main['tour_id'].unique())    # ONLY validation tours
+        
+        for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
+            if table in original_tables:
+                val_meta = self._filter_meta_table(original_tables[table], table, val_bikers, val_tours)
+                val_meta_path = os.path.join(fold_dir, f"{table}_val_{fold_idx}.csv")
+                val_meta.to_csv(val_meta_path, index=False)
+                additional_files[f"{table}_val"] = val_meta_path
+        
+        return train_path, x_val_path, additional_files
+    
+    def _filter_meta_table(self, table_df: pd.DataFrame, table_name: str, 
+                          valid_bikers: set, valid_tours: set) -> pd.DataFrame:
+        """Filter meta tables based on valid bikers and tours."""
+        if table_name == 'bikers':
+            return table_df[table_df['biker_id'].isin(valid_bikers)].copy()
+        elif table_name == 'tours':
+            return table_df[table_df['tour_id'].isin(valid_tours)].copy()
+        elif table_name == 'tour_convoy':
+            filtered = table_df[table_df['tour_id'].isin(valid_tours)].copy()
+            # Also filter the participant lists to only include valid bikers
+            for col in ['going', 'maybe', 'invited', 'not_going']:
+                if col in filtered.columns:
+                    filtered.loc[:, col] = filtered[col].apply(
+                        lambda x: [bid for bid in x if bid in valid_bikers] 
+                        if isinstance(x, list) else x
+                    )
+            return filtered
+        elif table_name == 'bikers_network':
+            filtered = table_df[table_df['biker_id'].isin(valid_bikers)].copy()
+            if 'friends' in filtered.columns:
+                filtered.loc[:, 'friends'] = filtered['friends'].apply(
+                    lambda x: [friend for friend in x if friend in valid_bikers] 
+                    if isinstance(x, list) else x
+                )
+            return filtered
+        return table_df.copy()
+
+
+
 # Registry of data splitters
 DATA_SPLITTERS = {
-    "csv": CSVDataSplitter,
+    "default": CSVDataSplitter,
     "image_folder": ImageFolderDataSplitter,
     "image_classification": ImageFolderDataSplitter,
     "recommendation": RecommendationDataSplitter,
     "time_series": TimeSeriesDataSplitter,
     "custom": CustomDataSplitter,
+    
+    "emnist": EMNISTDataSplitter,
+    "biker_recommender": BikerRecommenderDataSplitter
 }
 
 
@@ -460,6 +623,222 @@ class DataLoader(ABC):
     def get_data_structure(self) -> Dict[str, str]:
         """Return the expected data structure for this loader"""
         pass
+
+class EMNISTDataLoader(DataLoader):
+    """Data loader for EMNIST dataset in .npz format."""
+    
+    def load_train_data(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
+        """Load EMNIST training data from .npz file."""
+        dataset = {}
+        train_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"train_{fold_idx}.npz")
+        
+        if os.path.exists(train_path):
+            # Load the .npz file
+            with np.load(train_path) as data:
+                dataset['images'] = data['images']  # Shape: (n_samples, 28, 28)
+                dataset['labels'] = data['labels']  # Shape: (n_samples,)
+        else:
+            raise FileNotFoundError(f"Train file not found: {train_path}")
+        
+        return dataset
+    
+    def load_validation_features(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
+        """Load EMNIST validation features."""
+        dataset = {}
+        val_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"X_val_{fold_idx}.npz")
+        
+        if os.path.exists(val_path):
+            with np.load(val_path) as data:
+                dataset['images'] = data['images']  # Shape: (n_samples, 28, 28)
+        else:
+            raise FileNotFoundError(f"Validation features file not found: {val_path}")
+        
+        return dataset
+    
+    def load_validation_labels(self, comp: 'Competition', fold_idx: int, base_path: str) -> np.ndarray:
+        """Load EMNIST validation labels."""
+        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"y_val_{fold_idx}.npz")
+        
+        if os.path.exists(y_val_path):
+            with np.load(y_val_path) as data:
+                return data['labels']
+        else:
+            raise FileNotFoundError(f"Validation labels file not found: {y_val_path}")
+    
+    def get_data_structure(self) -> Dict[str, str]:
+        return {
+            'images': 'Training images (n_samples, 28, 28)',
+            'labels': 'Training labels (n_samples,)'
+        }
+
+class MultiLabelDataLoader(DataLoader):
+    """Data loader for multi-label CSV competitions where labels are stored as strings."""
+    
+    def load_train_data(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
+        """Load training data and parse multi-label strings into actual lists."""
+        dataset = {}
+        train_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"train_{fold_idx}.csv")
+        
+        if os.path.exists(train_path):
+            data = pd.read_csv(train_path)
+            
+            # Parse multi-label strings for the target column
+            target_col = comp.metadata.get("target_col")
+            if target_col and target_col in data.columns:
+                data[target_col] = data[target_col].apply(self._parse_multi_label_string)
+            
+            dataset['data'] = data
+        else:
+            raise FileNotFoundError(f"Train file not found: {train_path}")
+        
+        return dataset
+    
+    def load_validation_features(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
+        """Load validation features - no parsing needed for features."""
+        dataset = {}
+        val_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"X_val_{fold_idx}.csv")
+        
+        if os.path.exists(val_path):
+            dataset['X_val'] = pd.read_csv(val_path)
+        else:
+            raise FileNotFoundError(f"Validation features file not found: {val_path}")
+        
+        return dataset
+    
+    def load_validation_labels(self, comp: 'Competition', fold_idx: int, base_path: str) -> List[List[str]]:
+        """Load validation labels and parse multi-label strings."""
+        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"y_val_{fold_idx}.csv")
+        
+        if os.path.exists(y_val_path):
+            y_val_df = pd.read_csv(y_val_path)
+            target_col = comp.metadata.get("target_col", "genres")
+            
+            if target_col in y_val_df.columns:
+                # Parse the multi-label strings
+                parsed_labels = y_val_df[target_col].apply(self._parse_multi_label_string)
+                return parsed_labels
+            else:
+                # Assume the first column contains the labels
+                parsed_labels = y_val_df.iloc[:, 0].apply(self._parse_multi_label_string).tolist()
+                return parsed_labels
+        else:
+            raise FileNotFoundError(f"Validation labels file not found: {y_val_path}")
+    
+    def _parse_multi_label_string(self, label_str):
+        """Convert string representation like "[u'drama', u'comedy']" to actual list of strings."""
+        if isinstance(label_str, list):
+            return [str(item) for item in label_str]  # Ensure all items are strings
+            
+        if not isinstance(label_str, str):
+            return [str(label_str)]  # Single value converted to list
+            
+        if label_str.startswith('[') and label_str.endswith(']'):
+            try:
+                # Try to parse as Python list using ast.literal_eval
+                import ast
+                parsed = ast.literal_eval(label_str)
+                return parsed
+            except (ValueError, SyntaxError):
+                # Fallback: simple string parsing for malformed representations
+                cleaned = label_str.strip('[]')
+                # Handle various quote styles: u'genre', "genre", 'genre'
+                cleaned = cleaned.replace("u'", "").replace("'", "").replace('"', '')
+                items = [item.strip() for item in cleaned.split(',') if item.strip()]
+                return items if items else [label_str.strip()]
+        
+        # Single label as string - return as list with one element
+        return [label_str.strip()]
+    
+    def get_data_structure(self) -> Dict[str, str]:
+        return {
+            'data': 'Training data with parsed into lists multi-label genres',
+            'X_val': 'Validation features'
+        }
+
+class BikerRecommenderDataLoader(DataLoader):
+    """Data loader for biker tour recommendation system with multiple tables."""
+    
+    def load_train_data(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
+        """Load training data with training-filtered meta tables."""
+        dataset = {}
+        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id)
+        
+        # Load main training data
+        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
+        if os.path.exists(train_path):
+            dataset['train'] = pd.read_csv(train_path)
+        
+        # Load training-filtered meta tables
+        for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
+            meta_path = os.path.join(fold_dir, f"{table}_train_{fold_idx}.csv")
+            if os.path.exists(meta_path):
+                dataset[table] = pd.read_csv(meta_path)
+                dataset[table] = self._parse_table_specific_columns(dataset[table], table)
+        
+        return dataset
+    
+    def load_validation_features(self, comp: 'Competition', fold_idx: int, base_path: str) -> Dict[str, Any]:
+        """Load validation features with validation-filtered meta tables."""
+        dataset = {}
+        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id)
+        
+        # Load validation features
+        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
+        if os.path.exists(x_val_path):
+            dataset['X_val'] = pd.read_csv(x_val_path)
+        
+        # Load validation-filtered meta tables
+        for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
+            meta_path = os.path.join(fold_dir, f"{table}_val_{fold_idx}.csv")
+            if os.path.exists(meta_path):
+                dataset[table] = pd.read_csv(meta_path)
+                dataset[table] = self._parse_table_specific_columns(dataset[table], table)
+        
+        return dataset
+    
+    def load_validation_labels(self, comp: 'Competition', fold_idx: int, base_path: str) -> pd.DataFrame:
+        """Load validation labels from private directory."""
+        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"y_val_{fold_idx}.csv")
+        
+        if os.path.exists(y_val_path):
+            return pd.read_csv(y_val_path)
+        else:
+            raise FileNotFoundError(f"Validation labels file not found: {y_val_path}")
+    
+    def get_data_structure(self) -> Dict[str, str]:
+        return {
+            'train': 'Training interactions with like/dislike labels',
+            'bikers': 'Biker demographic information (training-filtered)',
+            'tours': 'Tour features and word counts (training-filtered)',
+            'tour_convoy': 'Tour participation lists (training-filtered)',
+            'bikers_network': 'Social network connections (training-filtered)',
+            'X_val': 'Validation interactions without labels',
+            'bikers_val': 'Biker demographic information (validation-filtered)',
+            'tours_val': 'Tour features and word counts (validation-filtered)',
+            'tour_convoy_val': 'Tour participation lists (validation-filtered)',
+            'bikers_network_val': 'Social network connections (validation-filtered)'
+        }
+    
+    def _parse_table_specific_columns(self, df: pd.DataFrame, table_name: str) -> pd.DataFrame:
+        """Parse space-delimited columns for specific tables."""
+        if table_name == 'tour_convoy':
+            for col in ['going', 'maybe', 'invited', 'not_going']:
+                if col in df.columns:
+                    df[col] = df[col].apply(self._parse_space_delimited)
+        elif table_name == 'bikers_network':
+            if 'friends' in df.columns:
+                df['friends'] = df['friends'].apply(self._parse_space_delimited)
+        return df
+    
+    def _parse_space_delimited(self, text):
+        """Parse space-delimited strings into lists of integers."""
+        if pd.isna(text) or text == '':
+            return []
+        return [int(x) for x in str(text).split() if x.strip().isdigit()]
+
+
+
+
 
 
 class DefaultDataLoader(DataLoader):
@@ -508,7 +887,24 @@ class DefaultDataLoader(DataLoader):
 # Registry of data loaders
 DATA_LOADERS = {
     "default": DefaultDataLoader,
+    "emnist": EMNISTDataLoader,
+    "multilabel": MultiLabelDataLoader,
+    "biker_recommender": BikerRecommenderDataLoader
 }
+
+
+class CompetitionFile:
+    """Represents a single file in a competition"""
+    def __init__(self, name: str, path: str, file_type: str = "data", required: bool = True):
+        self.name = name
+        self.path = path
+        self.file_type = file_type
+        self.required = required
+    
+    def exists(self) -> bool:
+        return os.path.exists(self.path)
+
+
 
 
 class CompetitionFile:
