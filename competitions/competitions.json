@@ -142,5 +142,70 @@
             "Additional data files provide rich features about bikers, tours, and social networks"
           ]
         }
+    },
+
+    
+    
+    
+    
+    
+    "emnist-handwritten-chars": {
+        "metric": "accuracy_score",
+        "target_col": "labels",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "predicted class labels (integers 0-61)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".npz"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.npz", "type": "data", "required": true}
+        },
+        "split_strategy": "emnist",
+        "load_strategy": "emnist",
+        "grader": "default",
+        "stratified_split": true,
+        "input_shape": [28, 28, 1],
+        "num_classes": 62
+    },
+    "movie-genre-classification": {
+        "metric": "f1_score_multilabel",
+        "target_col": "genres",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "predicted genres (list of strings or multi-label format)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "default",
+        "load_strategy": "multilabel",
+        "grader": "multilabel"
+    },
+    "biker-tour-recommendation": {
+        "metric": "mean_average_precision",
+        "target_col": "like",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "ranked list of tour_ids for each biker in format: [(biker_id, tour_id), ...] or DataFrame with columns ['biker_id', 'tour_id'] ordered by preference",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]},
+            "tour_convoy": {"type": "data", "required": true, "extensions": [".csv"]},
+            "bikers": {"type": "data", "required": true, "extensions": [".csv"]},
+            "tours": {"type": "data", "required": true, "extensions": [".csv"]},
+            "bikers_network": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true},
+            "tour_convoy": {"filename": "tour_convoy.csv", "type": "data", "required": true},
+            "bikers": {"filename": "bikers.csv", "type": "data", "required": true},
+            "tours": {"filename": "tours.csv", "type": "data", "required": true},
+            "bikers_network": {"filename": "bikers_network.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "biker_recommender",
+        "load_strategy": "biker_recommender",
+        "grader": "biker_recommender"
     }
 }
