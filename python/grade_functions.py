@@ -90,6 +90,32 @@ def log_results_and_exit(results: dict):
 
 
 
+def calculate_wae(y_pred: np.array, val: pd.DataFrame) -> float:
+    """
+    Calculate Weighted Mean Absolute Error For Income
+
+    Args:
+        pred : DataFrame with income predictions
+        val: DataFrame with weights for evaluation and true targets
+
+    Returns:
+        Weighted Mean Absolute Error
+    """
+
+    if 'w' not in val.columns:
+        weight_vals = np.ones(y_pred.shape[0])
+    else:
+        weight_vals = val['w'].values
+
+    if 'target' not in val.columns:
+        common.report_error("Validation data missing 'target' column")
+        return np.nan
+    y_true = val['target'].values
+    if y_pred.shape != y_true.shape:
+        common.report_error("The number of true values and predictions is not equal")
+        return np.nan
+
+    return (weight_vals * np.abs(y_true - y_pred)).mean()
 
 def calculate_ap_at_k(y_true_tours: List[int], predicted_ranking: List[int], k: int = None) -> float:
     """
