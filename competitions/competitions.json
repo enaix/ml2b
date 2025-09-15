@@ -207,5 +207,29 @@
         "split_strategy": "biker_recommender",
         "load_strategy": "biker_recommender",
         "grader": "biker_recommender"
+    },
+
+	
+
+    "financial-engineering-2": {
+        "metric": "mean_squared_error",
+        "target_col": "col_5",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted values for col_5 (floats)"
+    },
+    "alfa-university-income-prediction": {
+        "metric": "calculate_wae",
+        "target_col": "target",
+        "extra_col": "w",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted values for target (floats)"
+    },
+    "ml-olympiad-bd-2025": {
+        "metric": "accuracy_score",
+        "target_col": "RiskLevel",
+        "direction": "maximize",
+        "cv_folds": 3
     }
 }
