@@ -212,7 +212,7 @@
 	
 
     "financial-engineering-2": {
-        "metric": "mean_squared_error",
+        "metric": "root_mean_squared_error",
         "target_col": "col_5",
         "direction": "minimize",
         "cv_folds": 3,
