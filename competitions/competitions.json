@@ -231,5 +231,22 @@
         "target_col": "RiskLevel",
         "direction": "maximize",
         "cv_folds": 3
+    },
+    "playground-series-s5e6": {
+        "metric": "mean_average_precision",
+        "target_col": "Fertilizer Name",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "predicted fertilizer name (strings)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default",
+        "stratified_split": true
     }
 }

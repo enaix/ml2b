@@ -24,6 +24,16 @@ def f1_score_multilabel(y_true, y_pred):
     y_pred_bin = mlb.transform(y_pred)
     return f1_score(y_true_bin, y_pred_bin, average="samples")
 
+def apk(actual, predicted, k=3):
+    """Average precision at k for one sample."""
+    if actual in predicted:
+        return 1.0 / (predicted.index(actual) + 1)
+    return 0.0
+
+def mean_average_precision_k(y_true, y_pred_topk, k=3):
+    """Mean average precision at k over all samples."""
+    return np.mean([apk(a, p, k) for a, p in zip(y_true, y_pred_topk)])
+
 METRICS = {
     "roc_auc_score": roc_auc_score,
     "f1_score": f1_score,
@@ -39,6 +49,7 @@ METRICS = {
     "matthews_corrcoef": matthews_corrcoef,
     "balanced_accuracy": balanced_accuracy_score,
     "f1_score_multilabel": f1_score_multilabel,
+    "mean_average_precision": mean_average_precision_k,
 }
 
 
