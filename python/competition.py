@@ -3,8 +3,6 @@ from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 import os
 
 
-
-
 class Language(StrEnum):
     English = "English"
     Arab = "Arab"
@@ -97,9 +95,10 @@ class Competition:
                 data_files[file_key] = comp_file.path
         return data_files
 
-    def get_data_loader(self, loader_name: Optional[str] = None) -> DataLoader:
+    def get_data_loader(self, loader_name: Optional[str] = None) -> 'DataLoader':
         """Get the appropriate data loader for this competition"""
-        # TODO remove this code
+        from loaders.data_loaders import DataLoader  # отложенный импорт
+        
         if loader_name is None:
             loader_name = self.metadata.get('data_loader', 'default')
 
@@ -126,14 +125,15 @@ class Competition:
         """Get data card for a specific language"""
         return self._get_meta_for_lang(lang).get("data_card")
 
-     def get_domain(self, lang: Language) -> dict:
+    def get_domain(self, lang: Language) -> dict:
         """Get domain information for a specific language"""
         return self._get_meta_for_lang(lang).get("domain")
 
     def get_metric(self, lang: Language) -> dict:
         return self._get_meta_for_lang(lang).get("metric")
 
-    def get_code_ext(self, code_lang: CodeLanguage) -> str:
+    def get_code_ext(self, code_lang) -> str:
+        from src.bench import CodeLanguage, CODE_EXT
         return CODE_EXT[code_lang]
 
     # Legacy properties for backward compatibility

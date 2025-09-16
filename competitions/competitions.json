@@ -143,12 +143,6 @@
           ]
         }
     },
-
-    
-    
-    
-    
-    
     "emnist-handwritten-chars": {
         "metric": "accuracy_score",
         "target_col": "labels",
@@ -248,5 +242,23 @@
         "load_strategy": "default",
         "grader": "default",
         "stratified_split": true
+    },
+    "shaastra-wells-fargo-hackathon": {
+        "metric": "root_mean_squared_error",
+        "target_col": "Unique Headcount",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted student headcount (integers >= 0)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]},
+            "test": {"type": "data", "required": false, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "wells_fargo_train.csv", "type": "data", "required": true},
+            "test": {"filename": "wells_fargo_test.csv", "type": "data", "required": false}
+        },
+        "grader": "default"
     }
+    
+    
 }

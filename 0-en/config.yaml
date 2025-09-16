@@ -1,0 +1,46 @@
+data_dir: !!python/object/apply:pathlib.PosixPath
+- /
+- home
+- data
+desc_file: !!python/object/apply:pathlib.PosixPath
+- /
+- home
+- instructions.txt
+goal: null
+eval: null
+log_dir: !!python/object/apply:pathlib.PosixPath
+- /
+- app
+- logs
+- 0-en
+workspace_dir: !!python/object/apply:pathlib.PosixPath
+- /
+- app
+- workspaces
+- 0-en
+preprocess_data: true
+copy_data: true
+exp_name: 0-en
+exec:
+  timeout: 3600
+  agent_file_name: runfile.py
+  format_tb_ipython: false
+generate_report: true
+report:
+  model: gpt-oss:120b
+  temp: 1.0
+agent:
+  steps: 500
+  k_fold_validation: 5
+  expose_prediction: true
+  data_preview: true
+  code:
+    model: gpt-oss:120b
+    temp: 0.5
+  feedback:
+    model: gpt-oss:120b
+    temp: 0.5
+  search:
+    max_debug_depth: 20
+    debug_prob: 1.0
+    num_drafts: 5
