@@ -1,16 +1,33 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union
+from typing import Any, Dict, List, Optional, Tuple, Callable, Union, TypedDict, Annotated
 import numpy as np
 import pandas as pd
 
 from python.competition import *
 
 
+class BikersData(TypedDict):
+    bikers: Annotated[pd.DataFrame, 'Biker demographic information (training-filtered)']
+    tours: Annotated[pd.DataFrame, 'Tour features and word counts (training-filtered)']
+    tour_convoy: Annotated[pd.DataFrame, 'Tour participation lists (training-filtered)']
+    bikers_network: Annotated[pd.DataFrame, 'Social network connections (training-filtered)']
+
+class BikersTrain(BikersData):
+    train: Annotated[pd.DataFrame, 'Training interactions with like/dislike labels']
+
+class BikersVal(BikersData):
+    X_val: Annotated[pd.DataFrame, 'Validation features without labels']
+
+class Dataset(TypedDict):
+    data: Annotated[BikersTrain, 'Training features']
+    X_val: Annotated[BikersVal, 'Validation features']
+
 
 class BikerRecommenderDataLoader(DataLoader):
     """Data loader for biker tour recommendation system with multiple tables."""
+    DEFAULT_SCHEMA = Dataset
 
-    def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
+    def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> BikersTrain:
         """Load training data with training-filtered meta tables."""
         dataset = {}
         fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id)
@@ -29,7 +46,7 @@ class BikerRecommenderDataLoader(DataLoader):
 
         return dataset
 
-    def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
+    def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> BikersVal:
         """Load validation features with validation-filtered meta tables."""
         dataset = {}
         fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id)
@@ -56,20 +73,6 @@ class BikerRecommenderDataLoader(DataLoader):
             return pd.read_csv(y_val_path)
         else:
             raise FileNotFoundError(f"Validation labels file not found: {y_val_path}")
-
-    def get_data_structure(self) -> Dict[str, str]:
-        return {
-            'train': 'Training interactions with like/dislike labels',
-            'bikers': 'Biker demographic information (training-filtered)',
-            'tours': 'Tour features and word counts (training-filtered)',
-            'tour_convoy': 'Tour participation lists (training-filtered)',
-            'bikers_network': 'Social network connections (training-filtered)',
-            'X_val': 'Validation interactions without labels',
-            'bikers_val': 'Biker demographic information (validation-filtered)',
-            'tours_val': 'Tour features and word counts (validation-filtered)',
-            'tour_convoy_val': 'Tour participation lists (validation-filtered)',
-            'bikers_network_val': 'Social network connections (validation-filtered)'
-        }
 
     def _parse_table_specific_columns(self, df: pd.DataFrame, table_name: str) -> pd.DataFrame:
         """Parse space-delimited columns for specific tables."""

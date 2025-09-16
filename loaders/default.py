@@ -1,13 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union
+from typing import Any, Dict, List, Optional, Tuple, Callable, Union, TypedDict, Annotated
 import numpy as np
 import pandas as pd
 
 from python.competition import *
 
 
+class Dataset(TypedDict):
+    data: Annotated[pd.DataFrame, "Training data with target"]
+    X_val: Annotated[pd.DataFrame, "Validation data without target"]
+
+
 class DefaultDataLoader(DataLoader):
     """Default data loader with hardcoded paths"""
+    DEFAULT_SCHEMA = Dataset
 
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load training data from hardcoded path"""
@@ -41,9 +47,3 @@ class DefaultDataLoader(DataLoader):
             return pd.read_csv(y_val_path)
         else:
             raise ValueError(f"Validation labels file not found: {y_val_path}")
-
-    def get_data_structure(self) -> Dict[str, str]:
-        return {
-            'data': 'Training data with features and target',
-            'X_val': 'Validation features without target',
-        }

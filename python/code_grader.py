@@ -16,7 +16,7 @@ from .competition import *
 
 
 
-def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_predict: bool, folds: int | None) -> dict:
+def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_predict: bool, folds: int | None, extended_schema: bool) -> dict:
     """
     Executes LLM-generated code, computes CV scores, and returns metrics.
     """
@@ -74,14 +74,13 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
 
         for fold_idx in range(folds):
             # Load training data
-            train_dataset = loader.load_train_data(comp, fold_idx, self.base_path)
+            loader_train_dataset = loader.load_train_data(comp, fold_idx, self.base_path)
 
             # Load validation features
-            val_features_dataset = loader.load_validation_features(comp, fold_idx, self.base_path)
+            loader_val_features_dataset = loader.load_validation_features(comp, fold_idx, self.base_path)
 
             # Load validation labels
             val_labels = loader.load_validation_labels(comp, fold_idx, self.base_path)
-
 
             if mono_predict:
                 if not callable(train_code.get("train_and_predict")):
@@ -91,17 +90,29 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
                     if not callable(train_code.get(func_name)):
                         raise ValueError(f"{func_name} is not a callable function")
 
+            if extended_schema:
+                # Ensure that the arguments are sorted
+                schema = loader.schema_dict()
+                train_dataset = loader.get_ordered_result(loader_train_dataset, schema.items()[0])
+                val_features_dataset = loader.get_ordered_result(loader_val_features_dataset, schema.items()[1])
+            else:
+                train_dataset = loader_train_dataset
+                val_features_dataset = loader_val_features_dataset
+
             # Execute the appropriate prediction function
-            # TODO add two arguments formats
             try:
                 if mono_predict:
-                    predictions = train_code["train_and_predict"](train_dataset, val_features_dataset)
+                    if extended_schema:
+                        predictions = train_code["train_and_predict"](**train_dataset, **val_features_dataset)
+                    else:
+                        predictions = train_code["train_and_predict"](train_dataset, val_features_dataset)
                 else:
                     # Train phase
-                    train_output = train_code["train"](train_dataset)
+                    train_output = (train_code["train"](**train_dataset) if extended_schema else train_code["train"](train_dataset))
 
                     # Prepare validation phase
-                    val_prepared = train_code["prepare_val"](val_features_dataset, train_output)
+                    val_prepared = (train_code["prepare_val"](train_output, **val_features_dataset) if extended_schema else
+                                    train_code["prepare_val"](val_features_dataset, train_output))
 
                     # Predict phase
                     predictions = train_code["predict"](train_output, val_prepared)

@@ -49,7 +49,12 @@ def get_bench_params() -> dict:
     else:
         bench_folds = None
 
-    return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode, "bench_folds": bench_folds}
+    extended_schema = os.environ.get("EXTENDED_SCHEMA")
+    if extended_schema is None:
+        common.report_error("Environment variable EXTENDED_SCHEMA is unset")
+        common.graceful_exit(1)
+
+    return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode, "bench_folds": bench_folds, "extended_schema": extended_schema}
 
 
 # Loading the submission code
@@ -93,7 +98,7 @@ def main():
     else:
         train_code = load_modular_submission()
 
-    results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"))
+    results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"), params.get("extended_schema"))
 
     common.log_results_and_exit(results)
 

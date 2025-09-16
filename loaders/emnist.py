@@ -1,14 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union
+from typing import Any, Dict, List, Optional, Tuple, Callable, Union, TypedDict, Annotated
 import numpy as np
 import pandas as pd
 
 from python.competition import *
 
 
+class Dataset(TypedDict):
+    images: Annotated[pd.DataFrame, 'Training images with labels (n_samples, 28, 28)']
+    labels: Annotated[pd.DataFrame, 'Training images without labels']
+
 
 class EMNISTDataLoader(DataLoader):
     """Data loader for EMNIST dataset in .npz format."""
+    DEFAULT_SCHEMA = Dataset
 
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load EMNIST training data from .npz file."""
@@ -47,9 +52,3 @@ class EMNISTDataLoader(DataLoader):
                 return data['labels']
         else:
             raise FileNotFoundError(f"Validation labels file not found: {y_val_path}")
-
-    def get_data_structure(self) -> Dict[str, str]:
-        return {
-            'images': 'Training images (n_samples, 28, 28)',
-            'labels': 'Training labels (n_samples,)'
-        }

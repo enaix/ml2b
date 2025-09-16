@@ -1,14 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union
+from typing import Any, Dict, List, Optional, Tuple, Callable, Union, TypedDict, Annotated
 import numpy as np
 import pandas as pd
 
 from python.competition import *
 
 
+class Dataset(TypedDict):
+    data: Annotated[pd.DataFrame, 'Training data with parsed into lists multi-label genres']
+    X_val: Annotated[pd.DataFrame, 'Validation features']
+
 
 class MultiLabelDataLoader(DataLoader):
     """Data loader for multi-label CSV competitions where labels are stored as strings."""
+    DEFAULT_SCHEMA = Dataset
 
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load training data and parse multi-label strings into actual lists."""
@@ -84,9 +89,3 @@ class MultiLabelDataLoader(DataLoader):
 
         # Single label as string - return as list with one element
         return [label_str.strip()]
-
-    def get_data_structure(self) -> Dict[str, str]:
-        return {
-            'data': 'Training data with parsed into lists multi-label genres',
-            'X_val': 'Validation features'
-        }
