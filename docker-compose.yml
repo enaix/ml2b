@@ -5,7 +5,8 @@ services:
     container_name: bench_python
     volumes:
       - ./python/submission:/bench/submission
-      - ./competitions:/bench/competitions:ro
+      - ./src/bench.py:/bench/src/bench.py
+      - ./competitions:/bench/data:ro
     user: "bench:bench"
     networks:
       - python_no_inet

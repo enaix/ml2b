@@ -1,10 +1,9 @@
-import common
-
-import numpy as np
-import pandas as pd
+from typing import Any
 import sys
 from typing import List, Dict, Tuple
-
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics import (
     roc_auc_score,
     accuracy_score,
@@ -12,12 +11,129 @@ from sklearn.metrics import (
     log_loss,
     mean_absolute_error,
     mean_squared_error,
-    root_mean_squared_error,
     precision_score,
     recall_score,
     matthews_corrcoef,
-    balanced_accuracy_score
+    balanced_accuracy_score,
+    root_mean_squared_error
 )
+
+def f1_score_multilabel(y_true, y_pred):
+    mlb = MultiLabelBinarizer()
+    y_true_bin = mlb.fit_transform(y_true)
+    y_pred_bin = mlb.transform(y_pred)
+    return f1_score(y_true_bin, y_pred_bin, average="samples")
+
+
+def apk(actual, predicted, k=5):
+    """Average precision at k for one sample."""
+    if actual in predicted:
+        return 1.0 / (predicted.index(actual) + 1)
+    return 0.0
+
+
+def mean_average_precision_k(y_true, y_pred_topk, k=5):
+    """Mean average precision at k over all samples."""
+    return np.mean([apk(a, p, k) for a, p in zip(y_true, y_pred_topk)])
+
+
+def calculate_wae(y_pred: np.array, val: pd.DataFrame) -> float:
+    """
+    Calculate Weighted Mean Absolute Error For Income
+
+    Args:
+        pred : DataFrame with income predictions
+        val: DataFrame with weights for evaluation and true targets
+
+    Returns:
+        Weighted Mean Absolute Error
+    """
+
+    if 'w' not in val.columns:
+        weight_vals = np.ones(y_pred.shape[0])
+    else:
+        weight_vals = val['w'].values
+
+    if 'target' not in val.columns:
+        common.report_error("Validation data missing 'target' column")
+        return np.nan
+    y_true = val['target'].values
+    if y_pred.shape != y_true.shape:
+        common.report_error("The number of true values and predictions is not equal")
+        return np.nan
+
+    return (weight_vals * np.abs(y_true - y_pred)).mean()
+
+
+def calculate_ap_at_k(y_true_tours: List[int], predicted_ranking: List[int], k: int = None) -> float:
+    """
+    Calculate Average Precision at K for a single biker
+
+    Args:
+        y_true_tours: List of tour_ids that the biker actually liked
+        predicted_ranking: List of tour_ids in predicted preference order
+        k: Maximum number of recommendations to consider (if None, use all)
+
+    Returns:
+        Average Precision at K score
+    """
+    # TODO add try catch
+    if not y_true_tours:
+        return 0.0
+
+    if k is None:
+        k = len(predicted_ranking)
+
+    # Truncate predictions to k
+    predicted_ranking = predicted_ranking[:k]
+
+    gtp = len(y_true_tours)  # Ground Truth Positives
+    y_true_set = set(y_true_tours)
+
+    precision_sum = 0.0
+    num_hits = 0
+
+    for i, tour_id in enumerate(predicted_ranking, 1):
+        if tour_id in y_true_set:
+            num_hits += 1
+            precision_at_i = num_hits / i
+            precision_sum += precision_at_i
+
+    if gtp == 0:
+        return 0.0
+
+    return precision_sum / gtp
+
+
+def calculate_map_at_k(y_true_dict: Dict[int, List[int]], predictions_dict: Dict[int, List[int]], k: int = None) -> float:
+    """
+    Calculate Mean Average Precision at K across all bikers
+
+    Args:
+        y_true_dict: Dictionary mapping biker_id -> list of liked tour_ids
+        predictions_dict: Dictionary mapping biker_id -> list of predicted tour_ids (ranked)
+        k: Maximum number of recommendations to consider
+
+    Returns:
+        Mean Average Precision at K score
+    """
+    # TODO add try catch
+    ap_scores = []
+
+    for biker_id in y_true_dict:
+        if biker_id not in predictions_dict:
+            # If no predictions for this biker, AP = 0
+            ap_scores.append(0.0)
+            continue
+
+        y_true_tours = y_true_dict[biker_id]
+        predicted_ranking = predictions_dict[biker_id]
+
+        ap_score = calculate_ap_at_k(y_true_tours, predicted_ranking, k)
+        ap_scores.append(ap_score)
+
+    return np.mean(ap_scores)
+
 
 METRICS = {
     "roc_auc_score": roc_auc_score,
@@ -33,6 +149,8 @@ METRICS = {
     "mean_absolute_error": mean_absolute_error,
     "matthews_corrcoef": matthews_corrcoef,
     "balanced_accuracy": balanced_accuracy_score,
+    "f1_score_multilabel": f1_score_multilabel,
+    "mean_average_precision": mean_average_precision_k,
 }
 
 # Default grader
@@ -65,79 +183,10 @@ def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
         common.report_error(f"Grader execution failed : {sys.exc_info()}")
         return np.nan
 
-    
+
 
 # Custom graders
 # ==============
-
-def calculate_ap_at_k(y_true_tours: List[int], predicted_ranking: List[int], k: int = None) -> float:
-    """
-    Calculate Average Precision at K for a single biker
-    
-    Args:
-        y_true_tours: List of tour_ids that the biker actually liked
-        predicted_ranking: List of tour_ids in predicted preference order
-        k: Maximum number of recommendations to consider (if None, use all)
-    
-    Returns:
-        Average Precision at K score
-    """
-    # TODO add try catch
-    if not y_true_tours:
-        return 0.0
-    
-    if k is None:
-        k = len(predicted_ranking)
-
-    # Truncate predictions to k
-    predicted_ranking = predicted_ranking[:k]
-
-    gtp = len(y_true_tours)  # Ground Truth Positives
-    y_true_set = set(y_true_tours)
-
-    precision_sum = 0.0
-    num_hits = 0
-
-    for i, tour_id in enumerate(predicted_ranking, 1):
-        if tour_id in y_true_set:
-            num_hits += 1
-            precision_at_i = num_hits / i
-            precision_sum += precision_at_i
-
-    if gtp == 0:
-        return 0.0
-
-    return precision_sum / gtp
-
-
-def calculate_map_at_k(y_true_dict: Dict[int, List[int]], predictions_dict: Dict[int, List[int]], k: int = None) -> float:
-    """
-    Calculate Mean Average Precision at K across all bikers
-    
-    Args:
-        y_true_dict: Dictionary mapping biker_id -> list of liked tour_ids
-        predictions_dict: Dictionary mapping biker_id -> list of predicted tour_ids (ranked)
-        k: Maximum number of recommendations to consider
-    
-    Returns:
-        Mean Average Precision at K score
-    """
-    # TODO add try catch
-    ap_scores = []
-    
-    for biker_id in y_true_dict:
-        if biker_id not in predictions_dict:
-            # If no predictions for this biker, AP = 0
-            ap_scores.append(0.0)
-            continue
-        
-        y_true_tours = y_true_dict[biker_id]
-        predicted_ranking = predictions_dict[biker_id]
-        
-        ap_score = calculate_ap_at_k(y_true_tours, predicted_ranking, k)
-        ap_scores.append(ap_score)
-    
-    return np.mean(ap_scores)
 
 
 def grader_prml_nov2020(pred: pd.DataFrame, val: pd.DataFrame, comp: dict) -> float:
@@ -264,6 +313,142 @@ def grader_binary_classification_from_ranking(pred: pd.DataFrame, val: pd.DataFr
         return np.nan
 
 
+def grader_multilabel(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+    """Default grader with multi-label string parsing"""
+    metric_name = comp.get("metric", "accuracy_score")
+    metric = METRICS.get(metric_name)
+    
+    if metric is None:
+        report_error(f"grader_default() : internal error : metric not found : {metric_name}")
+        graceful_exit(1)
+    
+    try:
+        val_values = val
+        if isinstance(pred, pd.DataFrame):
+            pred_values = pred.iloc[:, 0].apply(_parse_multi_label_string_grader)
+        else:
+            pred_values = [_parse_multi_label_string_grader(v) for v in pred]
+        
+        score = metric(val_values, pred_values)
+        return score
+    except Exception as e:
+        report_error(f"Grader execution failed : {sys.exc_info()}")
+        return np.nan
+
+def _parse_multi_label_string_grader(label_str):
+    """Helper function for grader to parse multi-label strings"""
+    # Same implementation as in DataLoader
+    if isinstance(label_str, list):
+        return label_str
+            
+    if not isinstance(label_str, str):
+        return [str(label_str)]
+            
+    if label_str.startswith('[') and label_str.endswith(']'):
+        try:
+            import ast
+            parsed = ast.literal_eval(label_str)
+            return [str(item) for item in parsed]
+        except:
+            cleaned = label_str.strip('[]').replace("u'", "").replace("'", "").replace('"', '')
+            return [item.strip() for item in cleaned.split(',') if item.strip()]
+    
+    return [label_str.strip()]
+
+
+def grader_biker_recommender(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+    """
+    Grader for recommender systems using Mean Average Precision (MAP).
+    Only uses positive interactions (like=1) for evaluation.
+    """
+    try:
+        # Convert predictions and validation data to the right format
+        val = _convert_to_dataframe(val)
+        pred = _convert_to_dataframe(pred)
+        # Filter validation data to only include positive interactions (like=1)
+        # Ignore dislikes and non-responses for MAP evaluation
+        val_positives = val[val['like'] == 1]
+        
+        # Group positive validation data by biker_id
+        val_grouped = val_positives.groupby('biker_id')['tour_id'].apply(list).to_dict()
+        
+        # Group predictions by biker_id to get ranked recommendations
+        pred_grouped = pred.groupby('biker_id')['tour_id'].apply(list).to_dict()
+        
+        # Calculate AP for each biker with positive interactions
+        ap_scores = []
+        for biker_id, gt_tours in val_grouped.items():
+            if biker_id in pred_grouped:
+                gt_positives = set(gt_tours)
+                recommendations = pred_grouped[biker_id]
+                k = len(gt_tours)  # K is number of ground truth positives for this user
+                ap = _calculate_ap(recommendations, gt_positives, k)
+                ap_scores.append(ap)
+        
+        # Calculate MAP (mean of AP scores)
+        if ap_scores:
+            map_score = np.mean(ap_scores)
+            return float(map_score)
+        else:
+            return 0.0
+            
+    except Exception as e:
+        report_error(f"Recommender grader execution failed: {e}")
+        return np.nan
+
+def _calculate_ap(recommendations: List[int], gt_positives: set, k: int) -> float:
+    """
+    Calculate Average Precision for a single biker.
+    k: number of ground truth positives (varies per user)
+    """
+    if not gt_positives or k == 0:
+        return 0.0
+    
+    precision_values = []
+    num_hits = 0
+    
+    for i, tour_id in enumerate(recommendations):
+        if tour_id in gt_positives:
+            num_hits += 1
+            precision_at_i = num_hits / (i + 1)
+            precision_values.append(precision_at_i)
+        
+        # Stop if we've found all ground truth positives
+        if num_hits >= k:
+            break
+    
+    if not precision_values:
+        return 0.0
+    
+    return sum(precision_values) / k
+
+def _convert_to_dataframe(data: Any) -> pd.DataFrame:
+    """
+    Convert various input formats to DataFrame.
+    Handles both validation labels and prediction formats.
+    """
+    if isinstance(data, pd.DataFrame):
+        return data
+    elif isinstance(data, np.ndarray):
+        if data.shape[1] >= 2:
+            # Assume array has at least [biker_id, tour_id] columns
+            columns = ['biker_id', 'tour_id'] + [f'col_{i}' for i in range(2, data.shape[1])]
+            return pd.DataFrame(data, columns=columns)
+        else:
+            raise ValueError("Array must have at least 2 columns for biker_id and tour_id")
+    elif isinstance(data, list):
+        if data and isinstance(data[0], (list, tuple)):
+            # List of lists/tuples: [[biker_id, tour_id], ...]
+            return pd.DataFrame(data, columns=['biker_id', 'tour_id'])
+        else:
+            raise ValueError("List must contain lists or tuples of [biker_id, tour_id]")
+    else:
+        raise ValueError(f"Unsupported data format: {type(data)}")
+
+
+
+
+
 # Updated GRADERS registry
 GRADERS = {
     "default": grader_default,
@@ -271,5 +456,7 @@ GRADERS = {
     "map_at_k": grader_prml_nov2020,  # Alias
     "recommendation": grader_prml_nov2020,  # Alias
     "binary_from_ranking": grader_binary_classification_from_ranking,
+    "multilabel": grader_multilabel,
+    "biker_recommender": grader_biker_recommender
 }
 

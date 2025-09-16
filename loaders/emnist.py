@@ -1,0 +1,55 @@
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple, Callable, Union
+import numpy as np
+import pandas as pd
+
+from python.competition import *
+
+
+
+class EMNISTDataLoader(DataLoader):
+    """Data loader for EMNIST dataset in .npz format."""
+
+    def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
+        """Load EMNIST training data from .npz file."""
+        dataset = {}
+        train_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"train_{fold_idx}.npz")
+
+        if os.path.exists(train_path):
+            # Load the .npz file
+            with np.load(train_path) as data:
+                dataset['images'] = data['images']  # Shape: (n_samples, 28, 28)
+                dataset['labels'] = data['labels']  # Shape: (n_samples,)
+        else:
+            raise FileNotFoundError(f"Train file not found: {train_path}")
+
+        return dataset
+
+    def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
+        """Load EMNIST validation features."""
+        dataset = {}
+        val_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"X_val_{fold_idx}.npz")
+
+        if os.path.exists(val_path):
+            with np.load(val_path) as data:
+                dataset['images'] = data['images']  # Shape: (n_samples, 28, 28)
+        else:
+            raise FileNotFoundError(f"Validation features file not found: {val_path}")
+
+        return dataset
+
+    def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> np.ndarray:
+        """Load EMNIST validation labels."""
+        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"y_val_{fold_idx}.npz")
+
+        if os.path.exists(y_val_path):
+            with np.load(y_val_path) as data:
+                return data['labels']
+        else:
+            raise FileNotFoundError(f"Validation labels file not found: {y_val_path}")
+
+    def get_data_structure(self) -> Dict[str, str]:
+        return {
+            'images': 'Training images (n_samples, 28, 28)',
+            'labels': 'Training labels (n_samples,)'
+        }

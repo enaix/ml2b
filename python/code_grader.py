@@ -9,6 +9,7 @@ import traceback
 import shutil
 
 # Import from our architecture
+from loaders import DATA_LOADERS
 from .grade_functions import GRADERS
 import common
 from .competition import *
@@ -91,6 +92,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
                         raise ValueError(f"{func_name} is not a callable function")
 
             # Execute the appropriate prediction function
+            # TODO add two arguments formats
             try:
                 if mono_predict:
                     predictions = train_code["train_and_predict"](train_dataset, val_features_dataset)

@@ -544,6 +544,173 @@ class CustomDataSplitter(DataSplitter):
         return self.split_function.prepare_fold_data(comp, train_indices, val_indices, fold_idx, fold_dir, private_dir)
 
 
+
+class EMNISTDataSplitter(DataSplitter):
+    """Data splitter for EMNIST dataset using fixed 80:20 split with seed 42."""
+    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+        super().__init__(log_error, do_shutdown, grading_stage)
+
+    def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """Split EMNIST data using fixed 80:20 split with stratification."""
+        self.prepare_competition_files(comp)
+
+        train_file = comp.get_file("train")
+        if not train_file or not train_file.exists():
+            raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
+
+        # Load the original .npz file
+        with np.load(train_file.path) as data:
+            images = data['images']
+            labels = data['labels']
+
+        # Use fixed 80:20 split with seed 42
+        # For image classification, we should use stratified split to maintain class balance
+        train_idx, val_idx = train_test_split(
+            np.arange(len(labels)),
+            test_size=0.2,
+            random_state=42,
+            shuffle=True,
+            stratify=labels
+        )
+
+        # Return as a list with one split (to maintain interface compatibility)
+        return [(train_idx, val_idx)]
+
+    def prepare_fold_data(self, comp: Competition, train_indices: np.ndarray, val_indices: np.ndarray,
+                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
+        """Prepare fold data for EMNIST dataset and save as .npz files."""
+        train_file = comp.get_file("train")
+
+        # Load the original data
+        with np.load(train_file.path) as data:
+            images = data['images']
+            labels = data['labels']
+
+        # Split the data using the provided indices
+        train_images = images[train_indices]
+        train_labels = labels[train_indices]
+        val_images = images[val_indices]
+        val_labels = labels[val_indices]
+
+        # Save training data for this fold (always fold 0 since we only have one split)
+        train_path = os.path.join(fold_dir, f"train_{fold_idx}.npz")
+        np.savez(train_path, images=train_images, labels=train_labels)
+
+        # Save validation features
+        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.npz")
+        np.savez(x_val_path, images=val_images)
+
+        # Save validation labels (private)
+        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.npz")
+        np.savez(y_val_path, labels=val_labels)
+
+        return train_path, x_val_path, {}
+
+
+
+class BikerRecommenderDataSplitter(DataSplitter):
+    """Data splitter for biker tour recommendation system with multiple tables."""
+    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+        super().__init__(log_error, do_shutdown, grading_stage)
+
+    def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """Split recommender data using random splitting."""
+        self.prepare_competition_files(comp)
+
+        train_file = comp.get_file("train")
+        if not train_file or not train_file.exists():
+            raise FileNotFoundError("Train file not found")
+
+        train_df = pd.read_csv(train_file.path)
+        train_indices, val_indices = train_test_split(
+            train_df.index,
+            test_size=0.2,
+            random_state=42,
+            shuffle=True,
+            stratify=None  # No stratification needed for implicit feedback
+        )
+        return [(train_indices, val_indices)]
+
+    def prepare_fold_data(self, comp: Competition, train_indices: np.ndarray, val_indices: np.ndarray,
+                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
+        """Prepare fold data with separate filtering for train and validation meta tables."""
+        additional_files = {}
+
+        # Load all original tables
+        original_tables = {}
+        tables = ['train', 'tour_convoy', 'bikers', 'tours', 'bikers_network']
+        for table in tables:
+            table_file = comp.get_file(table)
+            if table_file and table_file.exists():
+                original_tables[table] = pd.read_csv(table_file.path)
+
+        # Get the main splits
+        train_main = original_tables['train'].iloc[train_indices]
+        val_main = original_tables['train'].iloc[val_indices]
+
+        # Save main splits
+        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
+        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
+        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+
+        train_main.to_csv(train_path, index=False)
+        val_main.drop(columns=['like', 'dislike']).to_csv(x_val_path, index=False)
+        val_main[['biker_id', 'tour_id', 'like', 'dislike']].to_csv(y_val_path, index=False)
+
+        # === SEPARATE FILTERING FOR TRAIN AND VALIDATION META TABLES ===
+
+        # 1. FILTER FOR TRAINING META TABLES (only training entities)
+        train_bikers = set(train_main['biker_id'].unique())
+        train_tours = set(train_main['tour_id'].unique())
+
+        for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
+            if table in original_tables:
+                train_meta = self._filter_meta_table(original_tables[table], table, train_bikers, train_tours)
+                train_meta_path = os.path.join(fold_dir, f"{table}_train_{fold_idx}.csv")
+                train_meta.to_csv(train_meta_path, index=False)
+                additional_files[f"{table}_train"] = train_meta_path
+
+        # 2. FILTER FOR VALIDATION META TABLES (only validation entities)
+        val_bikers = set(val_main['biker_id'].unique())  # ONLY validation bikers
+        val_tours = set(val_main['tour_id'].unique())    # ONLY validation tours
+
+        for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
+            if table in original_tables:
+                val_meta = self._filter_meta_table(original_tables[table], table, val_bikers, val_tours)
+                val_meta_path = os.path.join(fold_dir, f"{table}_val_{fold_idx}.csv")
+                val_meta.to_csv(val_meta_path, index=False)
+                additional_files[f"{table}_val"] = val_meta_path
+
+        return train_path, x_val_path, additional_files
+
+    def _filter_meta_table(self, table_df: pd.DataFrame, table_name: str,
+                          valid_bikers: set, valid_tours: set) -> pd.DataFrame:
+        """Filter meta tables based on valid bikers and tours."""
+        if table_name == 'bikers':
+            return table_df[table_df['biker_id'].isin(valid_bikers)].copy()
+        elif table_name == 'tours':
+            return table_df[table_df['tour_id'].isin(valid_tours)].copy()
+        elif table_name == 'tour_convoy':
+            filtered = table_df[table_df['tour_id'].isin(valid_tours)].copy()
+            # Also filter the participant lists to only include valid bikers
+            for col in ['going', 'maybe', 'invited', 'not_going']:
+                if col in filtered.columns:
+                    filtered.loc[:, col] = filtered[col].apply(
+                        lambda x: [bid for bid in x if bid in valid_bikers]
+                        if isinstance(x, list) else x
+                    )
+            return filtered
+        elif table_name == 'bikers_network':
+            filtered = table_df[table_df['biker_id'].isin(valid_bikers)].copy()
+            if 'friends' in filtered.columns:
+                filtered.loc[:, 'friends'] = filtered['friends'].apply(
+                    lambda x: [friend for friend in x if friend in valid_bikers]
+                    if isinstance(x, list) else x
+                )
+            return filtered
+        return table_df.copy()
+
+
 # Registry of data splitters
 DATA_SPLITTERS = {
     "csv": CSVDataSplitter,
@@ -552,4 +719,6 @@ DATA_SPLITTERS = {
     "recommendation": RecommendationDataSplitter,
     "time_series": TimeSeriesDataSplitter,
     "custom": CustomDataSplitter,
+    "emnist": EMNISTDataSplitter,
+    "biker_recommender": BikerRecommenderDataSplitter
 }
