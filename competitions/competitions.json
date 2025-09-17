@@ -258,6 +258,23 @@
             "test": {"filename": "wells_fargo_test.csv", "type": "data", "required": false}
         },
         "grader": "default"
+    },
+        "ml2021spring-hw1": {
+        "metric": "root_mean_squared_error",
+        "target_col": "tested_positive3",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "output_hint": "predict the probability of an individual testing positive for COVID-19 (floats >= 0)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default",
+        "stratified_split": false
     }
     
     
