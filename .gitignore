@@ -2,6 +2,8 @@ competitions/data/
 competitions/folds/
 competitions/validation/
 competitions/tasks/
+0-en/
+shaastra-wells-fargo-hackathon/
 
 python/data/
 python/submission/
