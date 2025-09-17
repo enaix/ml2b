@@ -9,9 +9,11 @@ from src.bench import BenchPipeline
 def main():
     parser = argparse.ArgumentParser(description='Prepare data and run a manual benchmark test using Docker')
     parser.add_argument('competition_id', help='ID of the competition to run')
+    parser.add_argument('lang', help='Competition language')
     parser.add_argument('code_path', help='Path to the Python code file to test')
     parser.add_argument('--mode', '-m', choices=['mono', 'modular'], default='mono',
                        help='Execution mode: mono (monolithic) or modular (default: mono)')
+    parser.add_argument('--extended_schema', '-s', choices=['y', 'n'], default='n', help='Use extended schema for submission code')
     parser.add_argument('--folds', '-f', type=int, help='Override number of folds')
     parser.add_argument('--rebuild', '-r', action='store_true', 
                        help='Rebuild Docker container before running')
@@ -44,7 +46,9 @@ def main():
             './grade.sh',
             args.code_path,
             args.competition_id,
-            'MONO_PREDICT' if args.mode == 'mono' else 'MODULAR_PREDICT'
+            args.lang,
+            'MONO_PREDICT' if args.mode == 'mono' else 'MODULAR_PREDICT',
+            args.extended_schema
         ]
         
         if args.rebuild:

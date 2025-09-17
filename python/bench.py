@@ -67,9 +67,16 @@ def get_bench_params() -> dict:
 
 # Loading the submission code
 # ===========================
-def load_mono_submission() -> dict:
+
+def _load_submission_code(codepath: os.PathLike) -> Any:
+    spec = importlib.util.spec_from_file_location("submission", codepath)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+def load_mono_submission(submission_name: str) -> dict:
     try:
-        mod = importlib.import_module("submission.code")  # loads the file 'code.py'
+        mod = _load_submission_code(os.path.join("submission", submission_name, "submission"))  # loads the file 'submission.py'
         if not hasattr(mod, "train_and_predict"):
             common.report_error(
                 "Submission code does not have the train_and_predict function"
@@ -81,9 +88,9 @@ def load_mono_submission() -> dict:
         common.graceful_exit(1)
 
 
-def load_modular_submission() -> dict:
+def load_modular_submission(submission_name: str) -> dict:
     try:
-        mod = importlib.import_module("submission.code")  # loads the file 'code.py'
+        mod = _load_submission_code(os.path.join("submission", submission_name, "submission"))  # loads the file 'submission.py'
         funcs = {}
         for func in ["train", "prepare_val", "predict"]:
             if not hasattr(mod, func):
