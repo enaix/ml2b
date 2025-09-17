@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from python.competition import *
+from loaders.data_loaders import DataLoader
 
 
 class Dataset(TypedDict):

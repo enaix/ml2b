@@ -6,6 +6,7 @@ from src.bench import (
     Language,
     CodeLanguage,
     CompetitionData,
+    CODE_EXT
 )
 from src.task_builder import TaskBuilder, TaskContext, TaskDescription
 import time
@@ -262,7 +263,7 @@ class DockerRunner:
             datacard=task.competition.get_data_card(task.lang)
         )
         task_context = TaskContext(
-            code_lang_extention=task.competition.get_code_ext(task.codelang),
+            code_lang_extention=CODE_EXT[task.codelang],
             code_lang=task.codelang,
             competition_type_code=(self.output_mode == RunnerOutput.CodeOnly or self.output_mode == RunnerOutput.CodeAndData),
             competition_type_file=(self.output_mode != RunnerOutput.CodeOnly),

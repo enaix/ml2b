@@ -95,16 +95,6 @@ class Competition:
                 data_files[file_key] = comp_file.path
         return data_files
 
-    def get_data_loader(self, loader_name: Optional[str] = None) -> 'DataLoader':
-        """Get the appropriate data loader for this competition"""
-        from loaders.data_loaders import DataLoader  # отложенный импорт
-        
-        if loader_name is None:
-            loader_name = self.metadata.get('data_loader', 'default')
-
-        loader_class = DATA_LOADERS.get(loader_name, DefaultDataLoader)
-        return loader_class()
-
     def get_available_languages(self) -> list[Language]:
         """Get available languages for this competition"""
         return list(self.tasks.keys())
@@ -131,10 +121,6 @@ class Competition:
 
     def get_metric(self, lang: Language) -> dict:
         return self._get_meta_for_lang(lang).get("metric")
-
-    def get_code_ext(self, code_lang) -> str:
-        from src.bench import CodeLanguage, CODE_EXT
-        return CODE_EXT[code_lang]
 
     # Legacy properties for backward compatibility
     # TODO remove this code (after checking src/bench.py)

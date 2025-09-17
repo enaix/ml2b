@@ -49,9 +49,16 @@ def get_bench_params() -> dict:
     else:
         bench_folds = None
 
-    extended_schema = os.environ.get("EXTENDED_SCHEMA")
-    if extended_schema is None:
+    extended_schema_val = os.environ.get("EXTENDED_SCHEMA")
+    if extended_schema_val is None:
         common.report_error("Environment variable EXTENDED_SCHEMA is unset")
+        common.graceful_exit(1)
+    if extended_schema_val.lower() in ["y", "yes", "true"]:
+        extended_schema = True
+    elif extended_schema_val.lower() in ["n", "no", "false"]:
+        extended_schema = False
+    else:
+        common.report_error("Bad EXTENDED_SCHEMA value: must be one either y/n OR yes/no OR true/false")
         common.graceful_exit(1)
 
     return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode, "bench_folds": bench_folds, "extended_schema": extended_schema}
