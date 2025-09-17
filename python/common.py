@@ -13,9 +13,14 @@ class Results:
 
     res = {"errors": [], "success": False}
     is_in_container = False
+    submission_name = None
 
     def write(self):
-        with open("submission/results.json", "w") as f:
+        if self.submission_name is None:
+            print(self.res)
+            print("Results.write() : internal error : submission_path is unset")
+            sys.exit(1)
+        with open(os.path.join("submission", self.submission_name, "results.json"), "w") as f:
             json.dump(self.res, f)
 
 

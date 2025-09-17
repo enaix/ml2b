@@ -18,7 +18,6 @@ from docker import DockerClient
 from loguru import logger
 
 from python.competition import *
-from python.dataloaders import *
 from python.splitters import *
 
 
@@ -191,16 +190,16 @@ class BenchPipeline:
         self.current_fold += 1
         return fold
 
-    def test_submission_code(self, comp: Competition, lang: Language, codelang: CodeLanguage, code: str) -> dict:
+    def test_submission_code(self, comp: Competition, lang: Language, codelang: CodeLanguage, code: str, client: DockerClient, uniq_suf: str, runtime_config: dict[str, Any], image_name: str, extended_schema: bool = False) -> dict:
         """
         Submit the code and return metric
         """
 
-        # TODO refactor this
-
         # Prepare submission dir
         # ======================
-        submission_dir = (Path(self.base_path()) / str(codelang) / f"submission_{uniq_suf}").resolve()
+
+        submission_name = f"submission_{uniq_suf}"
+        submission_dir = (Path(self.base_path()) / str(codelang) / submission_name).resolve()
         if os.path.exists(submission_dir):
             shutil.rmtree(submission_dir)
         os.mkdir(submission_dir)
@@ -214,14 +213,16 @@ class BenchPipeline:
 
         env_vars = {
             "COMPETITION_ID": comp.comp_id,
+            "SUBMISSION_NAME": submission_name,
             "BENCH_LANG": str(lang),
             "BENCH_MODE": str(BenchMode.ModularPredict),
+            "EXTENDED_SCHEMA": str(int(extended_schema)),
             "BENCH_FOLDS_OVERRIDE": "1",
             "PYTHONDONTWRITEBYTECODE": "1"
         }
         network_name = "python_no_inet"
 
-        # Проверяем, есть ли сеть
+        # Check if the network exists
         networks = [n.name for n in client.networks.list()]
         if network_name not in networks:
             client.networks.create(network_name, driver="bridge", internal=True)
@@ -256,6 +257,8 @@ class BenchPipeline:
     def test_submission_data(self, comp: Competition, fold: CompetitionData, lang: Language, 
                             codelang: CodeLanguage, data: Any) -> dict:
         """Test submission data with grader"""
+
+        # TODO is this dead code?
         val_dir = os.path.join(self.base_path(), "competitions", "validation", comp.comp_id)
         grader = comp.metadata.get("grader", "default")
 

@@ -53,15 +53,16 @@ def get_bench_params() -> dict:
     if extended_schema_val is None:
         common.report_error("Environment variable EXTENDED_SCHEMA is unset")
         common.graceful_exit(1)
-    if extended_schema_val.lower() in ["y", "yes", "true"]:
+    if extended_schema_val.lower() in ["0", "y", "yes", "true"]:
         extended_schema = True
-    elif extended_schema_val.lower() in ["n", "no", "false"]:
+    elif extended_schema_val.lower() in ["1", "n", "no", "false"]:
         extended_schema = False
     else:
-        common.report_error("Bad EXTENDED_SCHEMA value: must be one either y/n OR yes/no OR true/false")
+        common.report_error("Bad EXTENDED_SCHEMA value: must be one either 1/0 OR y/n OR yes/no OR true/false")
         common.graceful_exit(1)
 
-    return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode, "bench_folds": bench_folds, "extended_schema": extended_schema}
+
+    return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode, "bench_folds": bench_folds, "extended_schema": extended_schema, "submission_name": submission_name}
 
 
 # Loading the submission code
@@ -97,9 +98,18 @@ def load_modular_submission() -> dict:
 
 
 def main():
+    # Initialize logging
     common.bench_results.is_in_container = True
+    submission_name = os.environ.get("SUBMISSION_NAME")
+
+    if submission_name is None:
+        common.report_error("Environment variable SUBMISSION_NAME is unset")
+        common.graceful_exit(1)
+    common.submission_name = submission_name
+    # Init complete
 
     params = get_bench_params()
+    params["submission_name"] = submission_name
     if params["bench_mode"] == BenchMode.MonolithicPredict:
         train_code = load_mono_submission()
     else:

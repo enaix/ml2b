@@ -21,11 +21,11 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
     Executes LLM-generated code, computes CV scores, and returns metrics.
     """
     # Load competition config
-    if not os.path.exists("data/competitions.json"):
-        common.report_error("Could not find data/competitions.json")
+    if not os.path.exists("competitions/competitions.json"):
+        common.report_error("Could not find competitions/competitions.json")
         common.graceful_exit(1)
 
-    with open("data/competitions.json", 'r') as f:
+    with open("competitions/competitions.json", 'r') as f:
         comp = json.load(f).get(competition_id)
 
     if comp is None:
@@ -67,7 +67,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
         loader = loader_class()
 
         if folds is None:
-            common.report_error("Folds are unset")
+            common.report_error("grade_llm_code() : folds variable is unset")
             common.graceful_exit(1)
 
         scores = []
