@@ -69,7 +69,7 @@ class Competition:
     def _check_files_init(self) -> None:
         if self.files is None:
             self.log_error("Competition files are not initialized by the splitter")
-            self.shutdown(1)
+            self.do_shutdown(1)
 
     def get_file(self, file_key: str) -> Optional[CompetitionFile]:
         """Get a specific file by key"""
@@ -104,7 +104,7 @@ class Competition:
         values = self.tasks.get(lang)
         if values is None:
             print(f"Competition: could not find metadata for language {lang}")
-            self.shutdown(1)
+            self.do_shutdown(1)
         return values
 
     def get_description(self, lang: Language) -> dict:
@@ -121,20 +121,6 @@ class Competition:
 
     def get_metric(self, lang: Language) -> dict:
         return self._get_meta_for_lang(lang).get("metric")
-
-    # Legacy properties for backward compatibility
-    # TODO remove this code (after checking src/bench.py)
-    @property
-    def train_data(self) -> str:
-        """Get train data path (backward compatibility)"""
-        train_file = self.get_file("train")
-        return train_file.path if train_file else os.path.join(self.comp_path, "train.csv")
-
-    @property
-    def test_data(self) -> str:
-        """Get test data path (backward compatibility)"""
-        test_file = self.get_file("test")
-        return test_file.path if test_file else os.path.join(self.comp_path, "test.csv")
 
 
 class CompetitionData:

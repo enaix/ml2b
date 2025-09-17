@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Callable, Union
+from typing_extensions import get_type_hints, get_args
 #from python.competition import Competition
 from python.competition import *
 

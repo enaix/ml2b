@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 import numpy as np
 import pandas as pd
 import os
-from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
+import shutil
+from sklearn.model_selection import KFold, StratifiedKFold, GroupKFold, train_test_split
 
 from .competition import *
 
@@ -173,7 +174,7 @@ class DataSplitter(ABC):
 class CSVDataSplitter(DataSplitter):
     """Standard CSV data splitter using train_test_split with 80:20 ratio"""
 
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -241,7 +242,7 @@ class CSVDataSplitter(DataSplitter):
 class ImageFolderDataSplitter(DataSplitter):
     """Data splitter for image classification with folder structure"""
 
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[List[str], List[str]]]:
@@ -380,7 +381,7 @@ class ImageFolderDataSplitter(DataSplitter):
 class RecommendationDataSplitter(DataSplitter):
     """Custom data splitter for recommendation systems"""
 
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -452,7 +453,7 @@ class RecommendationDataSplitter(DataSplitter):
 class TimeSeriesDataSplitter(DataSplitter):
     """Time series data splitter that respects temporal order"""
 
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -534,7 +535,7 @@ class TimeSeriesDataSplitter(DataSplitter):
 class CustomDataSplitter(DataSplitter):
     """Custom data splitter for specific competitions"""
 
-    def __init__(self, split_function: Callable, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, split_function: Callable, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         self.split_function = split_function
         super().__init__(log_error, do_shutdown, grading_stage)
 
@@ -551,7 +552,7 @@ class CustomDataSplitter(DataSplitter):
 
 class EMNISTDataSplitter(DataSplitter):
     """Data splitter for EMNIST dataset using fixed 80:20 split with seed 42."""
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -614,7 +615,7 @@ class EMNISTDataSplitter(DataSplitter):
 
 class BikerRecommenderDataSplitter(DataSplitter):
     """Data splitter for biker tour recommendation system with multiple tables."""
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:

@@ -56,7 +56,7 @@ async def feed_competitions(bench: BenchPipeline, runner: DockerRunner):
 
             for lang in bench.languages():
                 for codelang in CodeLanguage:
-                    logger.debug(f"Add to queue\n task: {competition.comp_id}\n mode: {runner.input_mode}\n train path: {competition.train_data}\n language: {lang}\n code language: {codelang}")
+                    logger.debug(f"Add to queue\n task: {competition.comp_id}\n mode: {runner.input_mode}\n language: {lang}\n code language: {codelang}")
                     if runner.input_mode == RunnerInput.DescOnly:
                         task = Task(
                             idx=idx,
