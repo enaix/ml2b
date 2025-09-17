@@ -19,7 +19,7 @@ class DefaultDataLoader(DataLoader):
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load training data from hardcoded path"""
         dataset = {}
-        train_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"train_{fold_idx}.csv")
+        train_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}", f"train.csv")
 
         if os.path.exists(train_path):
             dataset['data'] = pd.read_csv(train_path)
@@ -31,7 +31,7 @@ class DefaultDataLoader(DataLoader):
     def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load validation features from hardcoded path"""
         dataset = {}
-        val_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"X_val_{fold_idx}.csv")
+        val_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}", f"X_val.csv")
 
         if os.path.exists(val_path):
             dataset['X_val'] = pd.read_csv(val_path)
@@ -42,7 +42,7 @@ class DefaultDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> pd.DataFrame:
         """Load validation labels from hardcoded path"""
-        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"y_val_{fold_idx}.csv")
+        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
 
         if os.path.exists(y_val_path):
             return pd.read_csv(y_val_path)

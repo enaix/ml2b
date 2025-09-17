@@ -227,9 +227,9 @@ class CSVDataSplitter(DataSplitter):
 
         # Save fold data
         train_fold = pd.concat([X_train, y_train], axis=1)
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
+        x_val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        y_val_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         train_fold.to_csv(train_path, index=False)
         X_val.to_csv(x_val_path, index=False)
@@ -316,15 +316,15 @@ class ImageFolderDataSplitter(DataSplitter):
                          fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
         """Prepare image fold data with directory structure"""
         # Create fold-specific directories
-        fold_train_dir = os.path.join(fold_dir, f"train_images_{fold_idx}")
-        fold_val_dir = os.path.join(fold_dir, f"val_images_{fold_idx}")
+        fold_train_dir = os.path.join(fold_dir, f"fold_{fold_idx}", f"train_images")
+        fold_val_dir = os.path.join(fold_dir, f"fold_{fold_idx}", f"val_images")
         os.makedirs(fold_train_dir, exist_ok=True)
         os.makedirs(fold_val_dir, exist_ok=True)
 
         # Create CSV files with image paths and labels
-        train_csv_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        val_csv_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        val_labels_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        train_csv_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
+        val_csv_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        val_labels_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         # Prepare training data
         train_data = []
@@ -420,7 +420,7 @@ class RecommendationDataSplitter(DataSplitter):
         val_fold = train_df.iloc(val_indices).copy()
 
         # Save training data
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
         train_fold.to_csv(train_path, index=False)
 
         # For validation: create X_val and y_val
@@ -440,8 +440,8 @@ class RecommendationDataSplitter(DataSplitter):
             val_features = val_fold.copy()
             val_labels = pd.DataFrame()
 
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        x_val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        y_val_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         val_features.to_csv(x_val_path, index=False)
         val_labels.to_csv(y_val_path, index=False)
@@ -520,9 +520,9 @@ class TimeSeriesDataSplitter(DataSplitter):
             y_val = pd.DataFrame()
 
         # Save files
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        val_labels_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
+        val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        val_labels_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         train_data.to_csv(train_path, index=False)
         X_val.to_csv(val_path, index=False)
@@ -597,15 +597,15 @@ class EMNISTDataSplitter(DataSplitter):
         val_labels = labels[val_indices]
 
         # Save training data for this fold (always fold 0 since we only have one split)
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.npz")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.npz")
         np.savez(train_path, images=train_images, labels=train_labels)
 
         # Save validation features
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.npz")
+        x_val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.npz")
         np.savez(x_val_path, images=val_images)
 
         # Save validation labels (private)
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.npz")
+        y_val_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.npz")
         np.savez(y_val_path, labels=val_labels)
 
         return train_path, x_val_path, {}
@@ -653,9 +653,9 @@ class BikerRecommenderDataSplitter(DataSplitter):
         val_main = original_tables['train'].iloc[val_indices]
 
         # Save main splits
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
+        x_val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        y_val_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         train_main.to_csv(train_path, index=False)
         val_main.drop(columns=['like', 'dislike']).to_csv(x_val_path, index=False)
@@ -670,7 +670,7 @@ class BikerRecommenderDataSplitter(DataSplitter):
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
             if table in original_tables:
                 train_meta = self._filter_meta_table(original_tables[table], table, train_bikers, train_tours)
-                train_meta_path = os.path.join(fold_dir, f"{table}_train_{fold_idx}.csv")
+                train_meta_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"{table}_train.csv")
                 train_meta.to_csv(train_meta_path, index=False)
                 additional_files[f"{table}_train"] = train_meta_path
 
@@ -681,7 +681,7 @@ class BikerRecommenderDataSplitter(DataSplitter):
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
             if table in original_tables:
                 val_meta = self._filter_meta_table(original_tables[table], table, val_bikers, val_tours)
-                val_meta_path = os.path.join(fold_dir, f"{table}_val_{fold_idx}.csv")
+                val_meta_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"{table}_val.csv")
                 val_meta.to_csv(val_meta_path, index=False)
                 additional_files[f"{table}_val"] = val_meta_path
 
