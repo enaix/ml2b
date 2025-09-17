@@ -218,7 +218,8 @@
         "extra_col": "w",
         "direction": "minimize",
         "cv_folds": 3,
-        "output_hint": "predicted values for target (floats)"
+        "output_hint": "predicted values for target (floats)",
+		"split_strategy": "csv"
     },
     "ml-olympiad-bd-2025": {
         "metric": "accuracy_score",
