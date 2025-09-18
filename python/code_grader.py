@@ -59,7 +59,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
     # Load data
     try:
         # DATA LOADING GOES HERE
-        loader_name = comp.metadata.get("data_loader", "default")
+        loader_name = comp.metadata.get("load_strategy", "default")
         loader_class = DATA_LOADERS.get(loader_name)
         if loader_class is None:
             raise ValueError(f"Data loader '{loader_name}' not found")

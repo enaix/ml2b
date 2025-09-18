@@ -29,6 +29,7 @@ import warnings
 import re
 import os
 warnings.filterwarnings("ignore", category=ResourceWarning)
+from loaders import DATA_LOADERS, DataLoader
 
 class RunnerSpec(BaseModel):
     """
@@ -46,6 +47,7 @@ class RunnerSpec(BaseModel):
     code_variant: Literal["extended", "short"]
     agent_dir: Path
     network: str | None
+    extended_schema: bool
 
 class Task(BaseModel):
     idx: int
@@ -256,6 +258,9 @@ class DockerRunner:
             self.load_file(container, load_dir, log_dir)
 
     def container_runtime(self, task: Task, task_out: TaskOut):
+        loader_name = task.competition.metadata.get("load_strategy", "default")
+        loader_class: DataLoader  = DATA_LOADERS.get(loader_name)
+    
         task_description = TaskDescription(
             description=task.competition.get_description(task.lang),
             domain=task.competition.get_domain(task.lang),
@@ -268,9 +273,13 @@ class DockerRunner:
             competition_type_code=(self.output_mode == RunnerOutput.CodeOnly or self.output_mode == RunnerOutput.CodeAndData),
             competition_type_file=(self.output_mode != RunnerOutput.CodeOnly),
             code_template_variant=self.runner_spec.code_variant,
-            task_info=task_description
+            task_info=task_description,
+            schema=loader_class.schema(expose=self.runner_spec.extended_schema),
+            schema_dict=loader_class.schema_dict(expose=self.runner_spec.extended_schema)
         )
         task_prompt = self.task_builder.render(task_context)
+        logger.info("TASK PROMPT: \n{}", task_prompt)
+        raise RuntimeError("ext")
         container = None
         instructions_file = None
         time_start = time.monotonic()

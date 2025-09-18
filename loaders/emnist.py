@@ -4,12 +4,18 @@ import numpy as np
 import pandas as pd
 
 from python.competition import *
-from loaders.data_loaders import DataLoader
+from loaders.data_loader import DataLoader
 
+class EMNISTTrain(TypedDict):
+    images: Annotated[np.ndarray, 'Training images with labels (n_samples, 28, 28)']
+    labels: Annotated[np.ndarray, 'Training images without labels']
+
+class EMNISTVal(TypedDict):
+    images: Annotated[np.ndarray, 'Validation images with labels (n_samples, 28, 28)']
 
 class Dataset(TypedDict):
-    images: Annotated[pd.DataFrame, 'Training images with labels (n_samples, 28, 28)']
-    labels: Annotated[pd.DataFrame, 'Training images without labels']
+    data: Annotated[EMNISTTrain, "Training features"]
+    X_val: Annotated[EMNISTVal, "Validation features"]
 
 
 class EMNISTDataLoader(DataLoader):

@@ -5,16 +5,16 @@
 ```python
 import pandas as pd
 import numpy as np
+from typing import TypedDict
 
-
-def train_and_predict(X_train: pd.DataFrame, y_train: pd.DataFrame, X_val: pd.DataFrame) -> np.array:
+{% for class_code in type_defs.values() %}
+{{ class_code }}
+{% endfor %}
+def train_and_predict({% for key, value in full_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> np.ndarray:
     """
-    This function takes the training data (X_train, y_train) and validation features X_val and returns the prediction for X_val
-    
-    Args:
-        X_train: (pd.DataFrame) containing the training features
-        y_train: (pd.DataFrame) containing the training target
-        X_val: (pd.DataFrame) containing the validation features
+    This function takes the training data, validation features and returns the predictions for validation features
+
+    {{ full_doc | indent(4) }}
     """
     ...
 ```

@@ -14,6 +14,8 @@ declare -A sheets=(
     ["1490673460"]="Romanian.csv"
     ["1065613449"]="Spanish.csv"
     ["0"]="Turkish.csv"
+    ["751010443"]="Russian.csv"
+    ["11714048"]="French.csv"
 )
 
 DEST="competitions/tasks"

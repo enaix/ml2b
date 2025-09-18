@@ -277,7 +277,7 @@ class BenchPipeline:
         df = pd.read_csv(path_to_data)
         return self.test_submission_data(comp, fold, lang, codelang, df)
 
-    def prepare_train_data(self, comp: Competition) -> None:
+    def prepare_train_data(self, comp: Competition, seed: int) -> None:
         """Prepare training data for all folds"""
         if not self.prepare_data:
             return None
