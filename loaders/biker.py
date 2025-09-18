@@ -26,7 +26,7 @@ class BikerRecommenderDataLoader(DataLoader):
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> BikersData:
         """Load training data with training-filtered meta tables."""
         dataset = {}
-        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}")
+        fold_dir = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}")
 
         # Load main training data
         train_path = os.path.join(fold_dir, f"train.csv")
@@ -45,7 +45,7 @@ class BikerRecommenderDataLoader(DataLoader):
     def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> BikersData:
         """Load validation features with validation-filtered meta tables."""
         dataset = {}
-        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}")
+        fold_dir = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}")
 
         # Load validation features
         x_val_path = os.path.join(fold_dir, f"X_val.csv")
@@ -63,7 +63,7 @@ class BikerRecommenderDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> pd.DataFrame:
         """Load validation labels from private directory."""
-        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
+        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
 
         if os.path.exists(y_val_path):
             return pd.read_csv(y_val_path)

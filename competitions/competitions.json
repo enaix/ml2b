@@ -115,5 +115,89 @@
         "load_strategy": "default",
         "grader": "default",
         "stratified_split": false
+    },
+    "ai-cancer-predictions": {
+        "metric": "accuracy_score",
+        "target_col": "diagnosis",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "binary predictions (0 or 1)"
+    },
+    "syde-522-winter-2021": {
+        "metric": "accuracy_score",
+        "target_col": "label",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "class labels (integers)"
+    },
+    "google-brain-ventilator": {
+        "metric": "mean_absolute_error",
+        "target_col": "pressure",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted pressure values (floats, in cmH2O)"
+    },
+    "porto-seguro-challenge": {
+        "metric": "f1_score",
+        "target_col": "y",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "binary predictions (0 or 1)"
+    },
+    "crime-learn": {
+        "metric": "root_mean_squared_error",
+        "target_col": "ViolentCrimesPerPop",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted crime rates (floats >= 0)"
+    },
+    "stroke-prediction-s3e2": {
+        "metric": "roc_auc_score",
+        "target_col": "stroke",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "she-hacks-2021": {
+        "metric": "root_mean_squared_error",
+        "target_col": "Unique Headcount",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "integer counts >= 0"
+    },
+    "wids-datathon-2020": {
+        "metric": "roc_auc_score",
+        "target_col": "hospital_death",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "ieor-242-nyc-taxi": {
+        "metric": "root_mean_squared_error",
+        "target_col": "duration",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted durations (floats >= 0)"
+    },
+    "explicit-content-detection": {
+        "metric": "f1_score",
+        "target_col": "target",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "binary predictions (0 or 1)"
+    },
+    "uwaterloo-stat441-jewelry": {
+        "metric": "roc_auc_score",
+        "target_col": "Revenue",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "financial-engineering-1": {
+        "metric": "mean_squared_error",
+        "target_col": "col_5",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted values for col_5 (floats)"
     }
 }

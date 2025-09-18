@@ -26,22 +26,6 @@ def generate_google_args_doc(
     container: str = "dict",
     sort_keys: bool = False,
 ) -> str:
-    """
-    Генерирует блок Google-style docstring (Args: ...) из словаря-схемы.
-
-    Ожидаемый формат листа:
-        {"type": "pd.DataFrame", "comment": "Some text"}  # comment опционален
-
-    Args:
-        schema: Схема (любой Mapping).
-        lang: 'en' или 'ru'.
-        indent: Размер отступа (пробелы).
-        container: Какой тип контейнера печатать: 'dict', 'Mapping' или 'MutableMapping'.
-        sort_keys: Сортировать ли ключи при выводе.
-
-    Returns:
-        Строка с секцией Args: ...
-    """
     if container not in {"dict", "Mapping", "MutableMapping"}:
         raise ValueError("container must be 'dict', 'Mapping', or 'MutableMapping'")
 
@@ -169,7 +153,7 @@ class TaskContext(BaseModel):
     competition_type_file: bool
     code_template_variant: Literal["extended", "short"] = "extended"
     task_info: TaskDescription
-    schema: dict[str, Any]
+    full_schema: dict[str, Any]
     schema_dict: dict[str, Any]
 
 class TaskBuilder:
@@ -179,7 +163,7 @@ class TaskBuilder:
     
     def render(self, context: TaskContext):
         task_context = context.model_dump()
-        schema = task_context.get("schema")
+        schema = task_context.get("full_schema")
         schema_dict = task_context.get("schema_dict")
         task_context["full_doc"] = generate_google_args_doc(schema)
         task_context["train_doc"] = generate_google_args_doc(filter_dict_by_suffix(schema, suffix="_val", discard=True))

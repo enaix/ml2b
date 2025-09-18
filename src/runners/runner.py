@@ -274,12 +274,10 @@ class DockerRunner:
             competition_type_file=(self.output_mode != RunnerOutput.CodeOnly),
             code_template_variant=self.runner_spec.code_variant,
             task_info=task_description,
-            schema=loader_class.schema(expose=self.runner_spec.extended_schema),
+            full_schema=loader_class.schema(expose=self.runner_spec.extended_schema),
             schema_dict=loader_class.schema_dict(expose=self.runner_spec.extended_schema)
         )
         task_prompt = self.task_builder.render(task_context)
-        logger.info("TASK PROMPT: \n{}", task_prompt)
-        raise RuntimeError("ext")
         container = None
         instructions_file = None
         time_start = time.monotonic()
@@ -313,7 +311,8 @@ class DockerRunner:
                     self.client,
                     task.unique_name,
                     parse_runtime_config(self.runner_spec.runtime_config),
-                    self.runner_spec.image_name
+                    self.runner_spec.image_name,
+                    self.runner_spec.extended_schema
                 )
             with open(run_dir / "code_results.json", "w", encoding="utf-8") as fp:
                 json.dump(result, fp, indent=2)

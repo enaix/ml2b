@@ -10,9 +10,9 @@ import shutil
 
 # Import from our architecture
 from loaders import DATA_LOADERS
-from .grade_functions import GRADERS
-import common
-from .competition import *
+from python.grade_functions import GRADERS
+import python.common as common
+from python.competition import *
 
 
 
@@ -42,9 +42,9 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
     do_shutdown = lambda x: common.graceful_exit(x)
 
     # Create competition object for grading stage
-    comp = Competition(competition_id, comp, {}, "data", log_error, do_shutdown)
+    comp = Competition(competition_id, comp, {}, "competitions", log_error, do_shutdown)
 
-    grader = comp.get("grader")
+    grader = comp.metadata.get("grader")
     if grader is None:
         # Execute the default grader
         grader = "default"
@@ -70,7 +70,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
             common.report_error("grade_llm_code() : folds variable is unset")
             common.graceful_exit(1)
 
-        base_path = "/home/bench"
+        base_path = "/home/bench/competitions"
 
         scores = []
 
@@ -94,9 +94,9 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
 
             if extended_schema:
                 # Ensure that the arguments are sorted
-                schema = loader.schema_dict()
-                train_dataset = loader.get_ordered_result(loader_train_dataset, schema.items()[0])
-                val_features_dataset = loader.get_ordered_result(loader_val_features_dataset, schema.items()[1])
+                # schema = list(loader.schema_dict().items())
+                train_dataset = loader_train_dataset
+                val_features_dataset = loader_val_features_dataset
             else:
                 train_dataset = loader_train_dataset
                 val_features_dataset = loader_val_features_dataset
@@ -114,7 +114,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
 
                     # Prepare validation phase
                     val_prepared = (train_code["prepare_val"](train_output, **val_features_dataset) if extended_schema else
-                                    train_code["prepare_val"](val_features_dataset, train_output))
+                                    train_code["prepare_val"](train_output, val_features_dataset))
 
                     # Predict phase
                     predictions = train_code["predict"](train_output, val_prepared)
@@ -125,8 +125,8 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
                     print(f"grade_llm_code() : finished fold {fold_idx+1}/{folds}")
 
             except Exception as e:
-                common.log_error(f"Error during fold {fold_idx} execution: {str(e)}")
-                common.do_shutdown(1)
+                common.report_error(f"Error during fold {fold_idx} execution: {str(e)}")
+                common.graceful_exit(1)
 
     except Exception as e:
         common.report_error(f"grade_llm_code() : grading failed : {e=} ({competition_id})")
@@ -135,7 +135,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
     valid_scores = [s for s in scores if not np.isnan(s)]
     if not valid_scores:
         common.report_error("Submission code failed for all CV folds")
-        common.graceful_shutdown(1)
+        common.graceful_exit(1)
     score = np.mean(valid_scores)
 
     return {

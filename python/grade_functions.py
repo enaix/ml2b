@@ -17,7 +17,7 @@ from sklearn.metrics import (
     balanced_accuracy_score,
     root_mean_squared_error
 )
-import common
+import python.common as common
 
 def f1_score_multilabel(y_true, y_pred):
     mlb = MultiLabelBinarizer()
@@ -320,8 +320,8 @@ def grader_multilabel(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
     metric = METRICS.get(metric_name)
     
     if metric is None:
-        report_error(f"grader_default() : internal error : metric not found : {metric_name}")
-        graceful_exit(1)
+        common.report_error(f"grader_default() : internal error : metric not found : {metric_name}")
+        common.graceful_exit(1)
     
     try:
         val_values = val
@@ -333,7 +333,7 @@ def grader_multilabel(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
         score = metric(val_values, pred_values)
         return score
     except Exception as e:
-        report_error(f"Grader execution failed : {sys.exc_info()}")
+        common.report_error(f"Grader execution failed : {sys.exc_info()}")
         return np.nan
 
 def _parse_multi_label_string_grader(label_str):
@@ -394,7 +394,7 @@ def grader_biker_recommender(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
             return 0.0
             
     except Exception as e:
-        report_error(f"Recommender grader execution failed: {e}")
+        common.report_error(f"Recommender grader execution failed: {e}")
         return np.nan
 
 def _calculate_ap(recommendations: List[int], gt_positives: set, k: int) -> float:
@@ -445,8 +445,6 @@ def _convert_to_dataframe(data: Any) -> pd.DataFrame:
             raise ValueError("List must contain lists or tuples of [biker_id, tour_id]")
     else:
         raise ValueError(f"Unsupported data format: {type(data)}")
-
-
 
 
 
