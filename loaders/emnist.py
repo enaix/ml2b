@@ -25,7 +25,7 @@ class EMNISTDataLoader(DataLoader):
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load EMNIST training data from .npz file."""
         dataset = {}
-        train_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"train_{fold_idx}.npz")
+        train_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}", f"train.npz")
 
         if os.path.exists(train_path):
             # Load the .npz file
@@ -40,7 +40,7 @@ class EMNISTDataLoader(DataLoader):
     def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load EMNIST validation features."""
         dataset = {}
-        val_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"X_val_{fold_idx}.npz")
+        val_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}", f"X_val.npz")
 
         if os.path.exists(val_path):
             with np.load(val_path) as data:
@@ -52,7 +52,7 @@ class EMNISTDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> np.ndarray:
         """Load EMNIST validation labels."""
-        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"y_val_{fold_idx}.npz")
+        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.npz")
 
         if os.path.exists(y_val_path):
             with np.load(y_val_path) as data:

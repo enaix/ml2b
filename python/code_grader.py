@@ -70,17 +70,19 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
             common.report_error("grade_llm_code() : folds variable is unset")
             common.graceful_exit(1)
 
+        base_path = "/home/bench"
+
         scores = []
 
         for fold_idx in range(folds):
             # Load training data
-            loader_train_dataset = loader.load_train_data(comp, fold_idx, self.base_path)
+            loader_train_dataset = loader.load_train_data(comp, fold_idx, base_path)
 
             # Load validation features
-            loader_val_features_dataset = loader.load_validation_features(comp, fold_idx, self.base_path)
+            loader_val_features_dataset = loader.load_validation_features(comp, fold_idx, base_path)
 
             # Load validation labels
-            val_labels = loader.load_validation_labels(comp, fold_idx, self.base_path)
+            val_labels = loader.load_validation_labels(comp, fold_idx, base_path)
 
             if mono_predict:
                 if not callable(train_code.get("train_and_predict")):
@@ -119,8 +121,8 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
 
                     # Grade the predictions against true labels
                     score = GRADERS[grader](predictions, val_labels, comp.metadata)
-                    scores.append(fold_score)
-                    print(f"grade_llm_code() : finished fold {i+1}/{folds}")
+                    scores.append(score)
+                    print(f"grade_llm_code() : finished fold {fold_idx+1}/{folds}")
 
             except Exception as e:
                 common.log_error(f"Error during fold {fold_idx} execution: {str(e)}")

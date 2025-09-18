@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold, StratifiedKFold, GroupKFold, train_test_split
 import importlib
 from docker import DockerClient
 from loguru import logger
@@ -356,26 +355,3 @@ class BenchPipeline:
             shutil.rmtree(fold_dir)
         if os.path.exists(private_dir):
             shutil.rmtree(private_dir)
-
-
-    # TODO remove the following dead code
-
-    def register_custom_splitter(self, name: str, splitter_class: type):
-        """Register a custom data splitter"""
-        if not issubclass(splitter_class, DataSplitter):
-            raise ValueError("Custom splitter must inherit from DataSplitter")
-        DATA_SPLITTERS[name] = splitter_class
-
-    def get_available_splitters(self) -> List[str]:
-        """Get available splitting strategies"""
-        return list(DATA_SPLITTERS.keys())
-
-    def register_custom_loader(self, name: str, loader_class: type):
-        """Register a custom data loader"""
-        if not issubclass(loader_class, DataLoader):
-            raise ValueError("Custom loader must inherit from DataLoader")
-        DATA_LOADERS[name] = loader_class
-
-    def get_available_loaders(self) -> List[str]:
-        """Get available data loaders"""
-        return list(DATA_LOADERS.keys())

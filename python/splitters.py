@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 import numpy as np
 import pandas as pd
 import os
-from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
+import shutil
+from sklearn.model_selection import KFold, StratifiedKFold, GroupKFold, train_test_split
 
 from .competition import *
 
@@ -173,7 +174,7 @@ class DataSplitter(ABC):
 class CSVDataSplitter(DataSplitter):
     """Standard CSV data splitter using train_test_split with 80:20 ratio"""
 
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -227,9 +228,9 @@ class CSVDataSplitter(DataSplitter):
 
         # Save fold data
         train_fold = pd.concat([X_train, y_train], axis=1)
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
+        x_val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        y_val_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         train_fold.to_csv(train_path, index=False)
         X_val.to_csv(x_val_path, index=False)
@@ -241,7 +242,7 @@ class CSVDataSplitter(DataSplitter):
 class ImageFolderDataSplitter(DataSplitter):
     """Data splitter for image classification with folder structure"""
 
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[List[str], List[str]]]:
@@ -316,15 +317,15 @@ class ImageFolderDataSplitter(DataSplitter):
                          fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
         """Prepare image fold data with directory structure"""
         # Create fold-specific directories
-        fold_train_dir = os.path.join(fold_dir, f"train_images_{fold_idx}")
-        fold_val_dir = os.path.join(fold_dir, f"val_images_{fold_idx}")
+        fold_train_dir = os.path.join(fold_dir, f"fold_{fold_idx}", f"train_images")
+        fold_val_dir = os.path.join(fold_dir, f"fold_{fold_idx}", f"val_images")
         os.makedirs(fold_train_dir, exist_ok=True)
         os.makedirs(fold_val_dir, exist_ok=True)
 
         # Create CSV files with image paths and labels
-        train_csv_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        val_csv_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        val_labels_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        train_csv_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
+        val_csv_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        val_labels_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         # Prepare training data
         train_data = []
@@ -380,7 +381,7 @@ class ImageFolderDataSplitter(DataSplitter):
 class RecommendationDataSplitter(DataSplitter):
     """Custom data splitter for recommendation systems"""
 
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -420,7 +421,7 @@ class RecommendationDataSplitter(DataSplitter):
         val_fold = train_df.iloc(val_indices).copy()
 
         # Save training data
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
         train_fold.to_csv(train_path, index=False)
 
         # For validation: create X_val and y_val
@@ -440,8 +441,8 @@ class RecommendationDataSplitter(DataSplitter):
             val_features = val_fold.copy()
             val_labels = pd.DataFrame()
 
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        x_val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        y_val_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         val_features.to_csv(x_val_path, index=False)
         val_labels.to_csv(y_val_path, index=False)
@@ -452,7 +453,7 @@ class RecommendationDataSplitter(DataSplitter):
 class TimeSeriesDataSplitter(DataSplitter):
     """Time series data splitter that respects temporal order"""
 
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -520,9 +521,9 @@ class TimeSeriesDataSplitter(DataSplitter):
             y_val = pd.DataFrame()
 
         # Save files
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        val_labels_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
+        val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        val_labels_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         train_data.to_csv(train_path, index=False)
         X_val.to_csv(val_path, index=False)
@@ -534,7 +535,7 @@ class TimeSeriesDataSplitter(DataSplitter):
 class CustomDataSplitter(DataSplitter):
     """Custom data splitter for specific competitions"""
 
-    def __init__(self, split_function: Callable, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, split_function: Callable, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         self.split_function = split_function
         super().__init__(log_error, do_shutdown, grading_stage)
 
@@ -551,7 +552,7 @@ class CustomDataSplitter(DataSplitter):
 
 class EMNISTDataSplitter(DataSplitter):
     """Data splitter for EMNIST dataset using fixed 80:20 split with seed 42."""
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -597,15 +598,15 @@ class EMNISTDataSplitter(DataSplitter):
         val_labels = labels[val_indices]
 
         # Save training data for this fold (always fold 0 since we only have one split)
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.npz")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.npz")
         np.savez(train_path, images=train_images, labels=train_labels)
 
         # Save validation features
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.npz")
+        x_val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.npz")
         np.savez(x_val_path, images=val_images)
 
         # Save validation labels (private)
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.npz")
+        y_val_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.npz")
         np.savez(y_val_path, labels=val_labels)
 
         return train_path, x_val_path, {}
@@ -614,7 +615,7 @@ class EMNISTDataSplitter(DataSplitter):
 
 class BikerRecommenderDataSplitter(DataSplitter):
     """Data splitter for biker tour recommendation system with multiple tables."""
-    def __init__(self, log_error: any, do_shutdown: any, grading_stage: bool = False):
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
         super().__init__(log_error, do_shutdown, grading_stage)
 
     def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -653,9 +654,9 @@ class BikerRecommenderDataSplitter(DataSplitter):
         val_main = original_tables['train'].iloc[val_indices]
 
         # Save main splits
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
-        y_val_path = os.path.join(private_dir, f"y_val_{fold_idx}.csv")
+        train_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"train.csv")
+        x_val_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"X_val.csv")
+        y_val_path = os.path.join(private_dir, f"fold_{fold_idx}", f"y_val.csv")
 
         train_main.to_csv(train_path, index=False)
         val_main.drop(columns=['like', 'dislike']).to_csv(x_val_path, index=False)
@@ -670,7 +671,7 @@ class BikerRecommenderDataSplitter(DataSplitter):
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
             if table in original_tables:
                 train_meta = self._filter_meta_table(original_tables[table], table, train_bikers, train_tours)
-                train_meta_path = os.path.join(fold_dir, f"{table}_train_{fold_idx}.csv")
+                train_meta_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"{table}_train.csv")
                 train_meta.to_csv(train_meta_path, index=False)
                 additional_files[f"{table}_train"] = train_meta_path
 
@@ -681,7 +682,7 @@ class BikerRecommenderDataSplitter(DataSplitter):
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
             if table in original_tables:
                 val_meta = self._filter_meta_table(original_tables[table], table, val_bikers, val_tours)
-                val_meta_path = os.path.join(fold_dir, f"{table}_val_{fold_idx}.csv")
+                val_meta_path = os.path.join(fold_dir, f"fold_{fold_idx}", f"{table}_val.csv")
                 val_meta.to_csv(val_meta_path, index=False)
                 additional_files[f"{table}_val"] = val_meta_path
 

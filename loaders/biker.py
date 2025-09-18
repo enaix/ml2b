@@ -26,16 +26,16 @@ class BikerRecommenderDataLoader(DataLoader):
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> BikersData:
         """Load training data with training-filtered meta tables."""
         dataset = {}
-        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id)
+        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}")
 
         # Load main training data
-        train_path = os.path.join(fold_dir, f"train_{fold_idx}.csv")
+        train_path = os.path.join(fold_dir, f"train.csv")
         if os.path.exists(train_path):
             dataset['train'] = pd.read_csv(train_path)
 
         # Load training-filtered meta tables
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
-            meta_path = os.path.join(fold_dir, f"{table}_train_{fold_idx}.csv")
+            meta_path = os.path.join(fold_dir, f"{table}_train.csv")
             if os.path.exists(meta_path):
                 dataset[table] = pd.read_csv(meta_path)
                 dataset[table] = self._parse_table_specific_columns(dataset[table], table)
@@ -45,16 +45,16 @@ class BikerRecommenderDataLoader(DataLoader):
     def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> BikersData:
         """Load validation features with validation-filtered meta tables."""
         dataset = {}
-        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id)
+        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}")
 
         # Load validation features
-        x_val_path = os.path.join(fold_dir, f"X_val_{fold_idx}.csv")
+        x_val_path = os.path.join(fold_dir, f"X_val.csv")
         if os.path.exists(x_val_path):
             dataset['X_val'] = pd.read_csv(x_val_path)
 
         # Load validation-filtered meta tables
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
-            meta_path = os.path.join(fold_dir, f"{table}_val_{fold_idx}.csv")
+            meta_path = os.path.join(fold_dir, f"{table}_val.csv")
             if os.path.exists(meta_path):
                 dataset[table] = pd.read_csv(meta_path)
                 dataset[table] = self._parse_table_specific_columns(dataset[table], table)
@@ -63,7 +63,7 @@ class BikerRecommenderDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> pd.DataFrame:
         """Load validation labels from private directory."""
-        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"y_val_{fold_idx}.csv")
+        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
 
         if os.path.exists(y_val_path):
             return pd.read_csv(y_val_path)
