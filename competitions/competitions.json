@@ -196,6 +196,14 @@
         "direction": "maximize",
         "cv_folds": 1,
         "split_strategy": "csv"
-	}
+	},
+    "rutgers-data101-fall2022-assignment-12": {
+        "metric": "root_mean_squared_error",
+        "target_col": "tripduration",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "output_hint": "predicted values for 'tripduration' (floats)",
+        "split_strategy": "csv"
+    }
     
 }
