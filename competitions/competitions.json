@@ -276,7 +276,14 @@
         "load_strategy": "default",
         "grader": "default",
         "stratified_split": false
-    }
-    
+    },
+	
+    "2024-datalab-cup1": {
+		"metric": "roc_auc_score"
+        "target_col": "Popularity",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "split_strategy": "csv"
+	}
     
 }
