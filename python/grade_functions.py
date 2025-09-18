@@ -15,7 +15,8 @@ from sklearn.metrics import (
     recall_score,
     matthews_corrcoef,
     balanced_accuracy_score,
-    root_mean_squared_error
+    root_mean_squared_error,
+    r2_score
 )
 import python.common as common
 
@@ -152,6 +153,7 @@ METRICS = {
     "balanced_accuracy": balanced_accuracy_score,
     "f1_score_multilabel": f1_score_multilabel,
     "mean_average_precision": mean_average_precision_k,
+    "r2_score": r2_score,
 }
 
 # Default grader

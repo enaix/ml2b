@@ -204,6 +204,22 @@
         "cv_folds": 1,
         "output_hint": "predicted values for 'tripduration' (floats)",
         "split_strategy": "csv"
+    },
+    "thapar-summer-school-2025-hack-iii": {
+        "metric": "r2_score",
+        "target_col": "output",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "output_hint": "predict the probability of an individual testing positive for COVID-19 (floats >= 0)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
     }
     
 }
