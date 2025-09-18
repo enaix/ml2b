@@ -5,29 +5,31 @@
 ```python
 import pandas as pd
 import numpy as np
-from typing import Any
+from typing import Any, TypedDict
 
-def train(X_train: pd.DataFrame, y_train: pd.DataFrame) -> Any:
+{% for class_code in type_defs.values() %}
+{{ class_code }}
+{% endfor %}
+def train({% for key, value in train_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> Any:
     """
-    This function takes X_train and y_train and returns the trained model and any intermediate variables
+    This function takes training data and returns the trained model and any intermediate variables
 
-    Args:
-        X_train (pd.DataFrame): Dataframe containing the training features
-        y_train (pd.DataFrame): Dataframe containing the training target
+    {{ train_doc | indent(4) }}
     """
     ...
 
-def prepare_val(X_val: pd.DataFrame, train_output: Any) -> Any:
-    """
-    This function takes X_val and train function output and returns processed X_val
 
-    Args:
-        X_val (pd.DataFrame): Dataframe containing the validation features
+def prepare_val(train_output: Any, {% for key, value in val_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{%- endfor %}) -> Any:
+    """
+    This function takes train function output and processed validation features
+
+    {{ val_doc | indent(4) }}
         train_output (Any): Output from the train function
     """
     ...
 
-def predict(train_output: Any, prepare_val_output: Any) -> np.array:
+
+def predict(train_output: Any, prepare_val_output: Any) -> np.ndarray:
     """
     This function takes train and prepare_val functions outputs and generates the prediction for validation features
 
@@ -37,9 +39,12 @@ def predict(train_output: Any, prepare_val_output: Any) -> np.array:
     """
     ...
 
-def run(X_train: pd.DataFrame, y_train: pd.DataFrame, X_val: pd.DataFrame) -> np.array:
+
+def run({% for key, value in full_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> np.ndarray:
     """
-    Entrypoint for submission.
+    This function takes the training data, validation features and returns the predictions for validation features
+
+    {{ full_doc | indent(4) }}
     """
     train_output = train(X_train, y_train)
     return predict(train_output, prepare_val(X_val, train_output))

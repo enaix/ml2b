@@ -199,6 +199,7 @@ class BenchPipeline:
 
         submission_name = f"submission_{uniq_suf}"
         submission_dir = (Path(self.base_path()) / str(codelang) / submission_name).resolve()
+        logger.info("SUBMISSION NAME:\n {}", submission_name)
         if os.path.exists(submission_dir):
             shutil.rmtree(submission_dir)
         os.mkdir(submission_dir)
@@ -217,7 +218,8 @@ class BenchPipeline:
             "BENCH_MODE": str(BenchMode.ModularPredict),
             "EXTENDED_SCHEMA": str(int(extended_schema)),
             "BENCH_FOLDS_OVERRIDE": "1",
-            "PYTHONDONTWRITEBYTECODE": "1"
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONPATH": "/home/bench"
         }
         network_name = "python_no_inet"
 
@@ -234,7 +236,7 @@ class BenchPipeline:
                 (Path(self.base_path()) / "competitions").resolve().as_posix(): {'bind': '/home/bench/competitions', 'mode': 'ro'}
             },
             network="python_no_inet",
-            entrypoint=["mamba", "run", "-n", "agent", "python", "./bench.py"],
+            entrypoint=["mamba", "run", "-n", "agent", "python", "python/bench.py"],
             **runtime_config,
             working_dir="/home/bench"
         )
@@ -276,7 +278,7 @@ class BenchPipeline:
         df = pd.read_csv(path_to_data)
         return self.test_submission_data(comp, fold, lang, codelang, df)
 
-    def prepare_train_data(self, comp: Competition) -> None:
+    def prepare_train_data(self, comp: Competition, seed: int) -> None:
         """Prepare training data for all folds"""
         if not self.prepare_data:
             return None

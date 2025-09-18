@@ -5,8 +5,8 @@ import importlib
 from typing import Any
 from enum import StrEnum
 
-import common
-from code_grader import grade_llm_code
+import python.common as common
+from python.code_grader import grade_llm_code
 
 
 
@@ -53,14 +53,15 @@ def get_bench_params() -> dict:
     if extended_schema_val is None:
         common.report_error("Environment variable EXTENDED_SCHEMA is unset")
         common.graceful_exit(1)
-    if extended_schema_val.lower() in ["0", "y", "yes", "true"]:
+    if extended_schema_val.lower() in ["1", "y", "yes", "true"]:
         extended_schema = True
-    elif extended_schema_val.lower() in ["1", "n", "no", "false"]:
+    elif extended_schema_val.lower() in ["0", "n", "no", "false"]:
         extended_schema = False
     else:
         common.report_error("Bad EXTENDED_SCHEMA value: must be one either 1/0 OR y/n OR yes/no OR true/false")
         common.graceful_exit(1)
 
+    submission_name = os.environ.get("SUBMISSION_NAME")
 
     return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode, "bench_folds": bench_folds, "extended_schema": extended_schema, "submission_name": submission_name}
 
@@ -76,7 +77,7 @@ def _load_submission_code(codepath: os.PathLike) -> Any:
 
 def load_mono_submission(submission_name: str) -> dict:
     try:
-        mod = _load_submission_code(os.path.join("submission", submission_name, "submission"))  # loads the file 'submission.py'
+        mod = importlib.import_module("submission.code")  # loads the file 'submission.py'
         if not hasattr(mod, "train_and_predict"):
             common.report_error(
                 "Submission code does not have the train_and_predict function"
@@ -90,7 +91,7 @@ def load_mono_submission(submission_name: str) -> dict:
 
 def load_modular_submission(submission_name: str) -> dict:
     try:
-        mod = _load_submission_code(os.path.join("submission", submission_name, "submission"))  # loads the file 'submission.py'
+        mod = importlib.import_module("submission.code") # loads the file 'submission.py'
         funcs = {}
         for func in ["train", "prepare_val", "predict"]:
             if not hasattr(mod, func):
@@ -101,7 +102,6 @@ def load_modular_submission(submission_name: str) -> dict:
     except BaseException as e:
         common.report_error(f"Could not load submission code: {e=}")
         common.graceful_exit(1)
-
 
 
 def main():
@@ -118,9 +118,9 @@ def main():
     params = get_bench_params()
     params["submission_name"] = submission_name
     if params["bench_mode"] == BenchMode.MonolithicPredict:
-        train_code = load_mono_submission()
+        train_code = load_mono_submission(common.submission_name)
     else:
-        train_code = load_modular_submission()
+        train_code = load_modular_submission(common.submission_name)
 
     results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"), params.get("extended_schema"))
 

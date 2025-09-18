@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from python.competition import *
-from loaders.data_loaders import DataLoader
+from loaders.data_loader import DataLoader
 
 
 class Dataset(TypedDict):
@@ -19,7 +19,7 @@ class MultiLabelDataLoader(DataLoader):
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load training data and parse multi-label strings into actual lists."""
         dataset = {}
-        train_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}", f"train.csv")
+        train_path = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}", f"train.csv")
 
         if os.path.exists(train_path):
             data = pd.read_csv(train_path)
@@ -29,7 +29,7 @@ class MultiLabelDataLoader(DataLoader):
             if target_col and target_col in data.columns:
                 data[target_col] = data[target_col].apply(self._parse_multi_label_string)
 
-            dataset['data'] = data
+            dataset = data
         else:
             raise FileNotFoundError(f"Train file not found: {train_path}")
 
@@ -38,10 +38,10 @@ class MultiLabelDataLoader(DataLoader):
     def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load validation features - no parsing needed for features."""
         dataset = {}
-        val_path = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}", f"X_val.csv")
+        val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"X_val.csv")
 
         if os.path.exists(val_path):
-            dataset['X_val'] = pd.read_csv(val_path)
+            dataset = pd.read_csv(val_path)
         else:
             raise FileNotFoundError(f"Validation features file not found: {val_path}")
 
@@ -49,7 +49,7 @@ class MultiLabelDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> List[List[str]]:
         """Load validation labels and parse multi-label strings."""
-        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
+        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
 
         if os.path.exists(y_val_path):
             y_val_df = pd.read_csv(y_val_path)

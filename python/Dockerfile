@@ -17,7 +17,10 @@ RUN umask 012 # files must not be writeable to the submission script
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY *.py .
+COPY *.py python
+COPY ../loaders loaders
+
+ENV PYTHONPATH="/home/bench"
 
 # Avoid potential data leak
 # RUN usermod -a -G bench root
@@ -29,4 +32,4 @@ COPY *.py .
 #RUN chown bench:bench submission # submission code can read/write to this dir
 #RUN touch submission/__init__.py # should be readonly
 
-CMD [ "python", "./bench.py" ]
+CMD [ "python", "python/bench.py" ]

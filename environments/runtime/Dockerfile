@@ -61,7 +61,8 @@ RUN useradd nonroot \
 #add bench user
 RUN useradd -m -U -s /bin/bash bench
 WORKDIR /home/bench
-COPY --chown=bench:bench python/*.py ./
+COPY --chown=bench:bench python ./python
+COPY --chown=bench:bench loaders ./loaders
 
 WORKDIR /home
 

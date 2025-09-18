@@ -17,6 +17,7 @@ def main():
     parser.add_argument('--folds', '-f', type=int, help='Override number of folds')
     parser.add_argument('--rebuild', '-r', action='store_true', 
                        help='Rebuild Docker container before running')
+    parser.add_argument('--seed', '-s', type=int, default=42)
 
     args = parser.parse_args()
 
@@ -36,7 +37,7 @@ def main():
         print(f"Error: Competition '{args.competition_id}' not found.")
         sys.exit(1)
     
-    pipeline.prepare_train_data(target_comp)
+    pipeline.prepare_train_data(target_comp, args.seed)
     print("✓ Data preparation complete on host.")
 
     # 2. Call the existing grade.sh script to handle Docker

@@ -15,6 +15,8 @@ class Language(StrEnum):
     Turkish = "Turkish"
     Belarus = "Belarus"
     Japanese = "Japanese"
+    Russian = "Russian"
+    French = "French"
 
 
 class FileTypes(StrEnum):

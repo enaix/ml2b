@@ -4,34 +4,29 @@ import numpy as np
 import pandas as pd
 
 from python.competition import *
-from loaders.data_loaders import DataLoader
+from loaders.data_loader import DataLoader
 
 
 class BikersData(TypedDict):
-    bikers: Annotated[pd.DataFrame, 'Biker demographic information (training-filtered)']
-    tours: Annotated[pd.DataFrame, 'Tour features and word counts (training-filtered)']
-    tour_convoy: Annotated[pd.DataFrame, 'Tour participation lists (training-filtered)']
-    bikers_network: Annotated[pd.DataFrame, 'Social network connections (training-filtered)']
+    bikers: Annotated[pd.DataFrame, 'Biker demographic information']
+    tours: Annotated[pd.DataFrame, 'Tour features and word counts']
+    tour_convoy: Annotated[pd.DataFrame, 'Tour participation lists']
+    bikers_network: Annotated[pd.DataFrame, 'Social network connections']
 
-class BikersTrain(BikersData):
-    train: Annotated[pd.DataFrame, 'Training interactions with like/dislike labels']
-
-class BikersVal(BikersData):
-    X_val: Annotated[pd.DataFrame, 'Validation features without labels']
 
 class Dataset(TypedDict):
-    data: Annotated[BikersTrain, 'Training features']
-    X_val: Annotated[BikersVal, 'Validation features']
+    data: Annotated[BikersData, 'Training features']
+    X_val: Annotated[BikersData, 'Validation features']
 
 
 class BikerRecommenderDataLoader(DataLoader):
     """Data loader for biker tour recommendation system with multiple tables."""
     DEFAULT_SCHEMA = Dataset
 
-    def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> BikersTrain:
+    def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> BikersData:
         """Load training data with training-filtered meta tables."""
         dataset = {}
-        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}")
+        fold_dir = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}")
 
         # Load main training data
         train_path = os.path.join(fold_dir, f"train.csv")
@@ -47,10 +42,10 @@ class BikerRecommenderDataLoader(DataLoader):
 
         return dataset
 
-    def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> BikersVal:
+    def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> BikersData:
         """Load validation features with validation-filtered meta tables."""
         dataset = {}
-        fold_dir = os.path.join(base_path, "data", "folds", comp.comp_id, f"fold_{fold_idx}")
+        fold_dir = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}")
 
         # Load validation features
         x_val_path = os.path.join(fold_dir, f"X_val.csv")
@@ -68,7 +63,7 @@ class BikerRecommenderDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> pd.DataFrame:
         """Load validation labels from private directory."""
-        y_val_path = os.path.join(base_path, "data", "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
+        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
 
         if os.path.exists(y_val_path):
             return pd.read_csv(y_val_path)
