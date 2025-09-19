@@ -127,6 +127,25 @@
         "split_strategy": "csv",
         "load_strategy": "default",
         "grader": "default"
-    }
+    },
+	"classify-leaves": {
+	    "metric": "accuracy_score",
+	    "target_col": "labels",
+	    "direction": "maximize",
+	    "cv_folds": 1,
+	    "output_hint": "predicted class labels (strings)",
+	    "files": {
+		"train": {"type": "data", "required": true, "extensions": [".csv"]}
+	    },
+	    "file_mapping": {
+		"train": {"filename": "train.csv", "type": "data", "required": true}
+	    },
+	    "split_strategy": "classify-leaves",
+	    "load_strategy": "classify-leaves",
+	    "grader": "classify_leaves",
+	    "stratified_split": true,
+	    "input_shape": [28, 28, 1],
+	    "num_classes": 62
+	}
     
 }
