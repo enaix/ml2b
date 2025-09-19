@@ -112,7 +112,7 @@ def main():
     if submission_name is None:
         common.report_error("Environment variable SUBMISSION_NAME is unset")
         common.graceful_exit(1)
-    common.submission_name = submission_name
+    common.bench_results.submission_name = submission_name
     # Init complete
 
     params = get_bench_params()
