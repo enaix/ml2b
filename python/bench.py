@@ -118,9 +118,9 @@ def main():
     params = get_bench_params()
     params["submission_name"] = submission_name
     if params["bench_mode"] == BenchMode.MonolithicPredict:
-        train_code = load_mono_submission(common.submission_name)
+        train_code = load_mono_submission(submission_name)
     else:
-        train_code = load_modular_submission(common.submission_name)
+        train_code = load_modular_submission(submission_name)
 
     results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"), params.get("extended_schema"))
 
