@@ -278,6 +278,7 @@ class DockerRunner:
             schema_dict=loader_class.schema_dict(expose=self.runner_spec.extended_schema)
         )
         task_prompt = self.task_builder.render(task_context)
+        logger.info("TASK: {}", task_prompt)
         container = None
         instructions_file = None
         time_start = time.monotonic()

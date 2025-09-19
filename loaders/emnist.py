@@ -7,11 +7,11 @@ from python.competition import *
 from loaders.data_loader import DataLoader
 
 class EMNISTTrain(TypedDict):
-    images: Annotated[np.ndarray, 'Training images with labels (n_samples, 28, 28)']
-    labels: Annotated[np.ndarray, 'Training images without labels']
+    images: Annotated[np.ndarray, 'Training images']
+    labels: Annotated[np.ndarray, 'Training labels']
 
 class EMNISTVal(TypedDict):
-    images: Annotated[np.ndarray, 'Validation images with labels (n_samples, 28, 28)']
+    images: Annotated[np.ndarray, 'Validation images with labels']
 
 class Dataset(TypedDict):
     data: Annotated[EMNISTTrain, "Training features"]

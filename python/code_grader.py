@@ -104,16 +104,16 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
             # Execute the appropriate prediction function
             try:
                 if mono_predict:
-                    if extended_schema:
+                    if extended_schema and isinstance(train_dataset, dict):
                         predictions = train_code["train_and_predict"](**train_dataset, **val_features_dataset)
                     else:
                         predictions = train_code["train_and_predict"](train_dataset, val_features_dataset)
                 else:
                     # Train phase
-                    train_output = (train_code["train"](**train_dataset) if extended_schema else train_code["train"](train_dataset))
+                    train_output = (train_code["train"](**train_dataset) if extended_schema and isinstance(train_dataset, dict) else train_code["train"](train_dataset))
 
                     # Prepare validation phase
-                    val_prepared = (train_code["prepare_val"](train_output, **val_features_dataset) if extended_schema else
+                    val_prepared = (train_code["prepare_val"](train_output, **val_features_dataset) if extended_schema and isinstance(val_features_dataset, dict) else
                                     train_code["prepare_val"](train_output, val_features_dataset))
 
                     # Predict phase
@@ -125,7 +125,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
                     print(f"grade_llm_code() : finished fold {fold_idx+1}/{folds}")
 
             except Exception as e:
-                common.report_error(f"Error during fold {fold_idx} execution: {str(e)}")
+                common.report_error(f"Error during fold {fold_idx} execution: {traceback.format_exc()}")
                 common.graceful_exit(1)
 
     except Exception as e:

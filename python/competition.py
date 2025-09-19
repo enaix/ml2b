@@ -115,7 +115,7 @@ class Competition:
 
     def get_data_card(self, lang: Language) -> dict:
         """Get data card for a specific language"""
-        return self._get_meta_for_lang(lang).get("data_card")
+        return self._get_meta_for_lang(lang).get("data_card", " ")
 
     def get_domain(self, lang: Language) -> dict:
         """Get domain information for a specific language"""
