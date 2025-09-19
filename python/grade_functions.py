@@ -17,6 +17,7 @@ from sklearn.metrics import (
     balanced_accuracy_score,
     root_mean_squared_error
 )
+from python.segmentation_grader import grader_segmentation_map, mean_average_precision_segmentation
 
 def f1_score_multilabel(y_true, y_pred):
     mlb = MultiLabelBinarizer()
@@ -134,7 +135,6 @@ def calculate_map_at_k(y_true_dict: Dict[int, List[int]], predictions_dict: Dict
 
     return np.mean(ap_scores)
 
-
 METRICS = {
     "roc_auc_score": roc_auc_score,
     "f1_score": f1_score,
@@ -151,6 +151,7 @@ METRICS = {
     "balanced_accuracy": balanced_accuracy_score,
     "f1_score_multilabel": f1_score_multilabel,
     "mean_average_precision": mean_average_precision_k,
+    "mean_average_precision_segmentation": mean_average_precision_segmentation,
 }
 
 # Default grader
@@ -446,9 +447,6 @@ def _convert_to_dataframe(data: Any) -> pd.DataFrame:
         raise ValueError(f"Unsupported data format: {type(data)}")
 
 
-
-
-
 # Updated GRADERS registry
 GRADERS = {
     "default": grader_default,
@@ -457,6 +455,7 @@ GRADERS = {
     "recommendation": grader_prml_nov2020,  # Alias
     "binary_from_ranking": grader_binary_classification_from_ranking,
     "multilabel": grader_multilabel,
-    "biker_recommender": grader_biker_recommender
+    "biker_recommender": grader_biker_recommender,
+    "segmentation_map": grader_segmentation_map
 }
 

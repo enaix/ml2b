@@ -9,5 +9,6 @@ DATA_LOADERS = {
     "default": DefaultDataLoader,
     "emnist": EMNISTDataLoader,
     "multilabel": MultiLabelDataLoader,
-    "biker_recommender": BikerRecommenderDataLoader
+    "biker_recommender": BikerRecommenderDataLoader,
+    "segmentation": SegmentationDataLoader,
 }

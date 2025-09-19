@@ -5,7 +5,7 @@ competitions/tasks/
 
 python/data/
 python/submission/
-
+mlb/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
