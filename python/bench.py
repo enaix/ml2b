@@ -110,7 +110,7 @@ def main():
     # Init complete
 
     params = get_bench_params()
-    params["submission_name"] = submission_name
+    # params["submission_name"] = submission_name
     if params["bench_mode"] == BenchMode.MonolithicPredict:
         train_code = load_mono_submission()
     else:
