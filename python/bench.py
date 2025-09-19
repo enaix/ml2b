@@ -7,6 +7,7 @@ from enum import StrEnum
 
 import python.common as common
 from python.code_grader import grade_llm_code
+import python.ast_parser as ast_parser
 
 
 
@@ -69,15 +70,21 @@ def get_bench_params() -> dict:
 # Loading the submission code
 # ===========================
 
-def _load_submission_code(codepath: os.PathLike) -> Any:
-    spec = importlib.util.spec_from_file_location("submission", codepath)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+def _load_submission_code() -> Any:
+    module = ast_parser.safe_import_from_file("submission/code.py", "submission.code")
+    #spec = importlib.util.spec_from_file_location("submission", codepath)
+    #module = importlib.util.module_from_spec(spec)
+    #spec.loader.exec_module(module)
     return module
 
 def load_mono_submission() -> dict:
     try:
-        mod = importlib.import_module("submission.code")  # loads the file 'submission.py'
+        try:
+            mod = _load_submission_code()
+        except BaseException:
+            common.report_error("Could not parse the AST of the submission. Trying to load the usual way...")
+            mod = importlib.import_module("submission.code")
+
         if not hasattr(mod, "train_and_predict"):
             common.report_error(
                 "Submission code does not have the train_and_predict function"
@@ -91,7 +98,12 @@ def load_mono_submission() -> dict:
 
 def load_modular_submission() -> dict:
     try:
-        mod = importlib.import_module("submission.code") # loads the file 'submission.py'
+        try:
+            mod = _load_submission_code()
+        except BaseException:
+            common.report_error("Could not parse the AST of the submission. Trying to load the usual way...")
+            mod = importlib.import_module("submission.code")
+
         funcs = {}
         for func in ["train", "prepare_val", "predict"]:
             if not hasattr(mod, func):
