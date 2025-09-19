@@ -239,7 +239,7 @@ class CSVDataSplitter(DataSplitter):
         X_val.to_csv(val_path / "X_val.csv", index=False)
         y_val.to_csv(val_path / "y_val.csv", index=False)
 
-        return train_path, train_path, {}
+        return train_path, val_path, {}
 
 
 class ImageFolderDataSplitter(DataSplitter):
