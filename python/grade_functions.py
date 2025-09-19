@@ -136,6 +136,80 @@ def calculate_map_at_k(y_true_dict: Dict[int, List[int]], predictions_dict: Dict
 
     return np.mean(ap_scores)
 
+def _convert_to_dataframe_fin_eng(data) -> pd.DataFrame:
+    """
+    Convert various input formats to DataFrame.
+    Handles both validation labels and prediction formats.
+    """
+    if isinstance(data, pd.DataFrame):
+        return data
+    elif isinstance(data, np.ndarray):
+        if data.shape[1] == 2:
+            # Assume array has at least [biker_id, tour_id] columns
+            columns = ['col_5', 'col_8']
+            return pd.DataFrame(data, columns=columns)
+        elif data.shape[1] == 3:
+            # Assume array has at least [biker_id, tour_id] columns
+            columns = ['id', 'col_5', 'col_8']
+            return pd.DataFrame(data, columns=columns)
+        else:
+            raise ValueError("Array must have at least 2 columns for col_5 and col_8 predictions")
+    elif isinstance(data, list):
+        if data and isinstance(data[0], (list, tuple)):
+            if len(data[0]) == 3:
+                columns = ['id', 'col_5', 'col_8']
+            elif len(data[0]) == 2:
+                columns = ['col_5', 'col_8']
+            else:
+                raise ValueError("List must contain at list two lists or tuples")
+            # List of lists/tuples: [[col_5, col_8], ...]
+            return pd.DataFrame(data, columns=columns)
+        else:
+            raise ValueError("List must contain lists or tuples of [col_5, col_8]")
+    else:
+        raise ValueError(f"Unsupported data format: {type(data)}")
+
+def calculate_rmse(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
+    """
+    Calculate RMSE For col_5 and col_8
+
+    Args:
+        pred : DataFrame with predictions for both columns
+        val: DataFrame with true targets for both columns
+
+    Returns:
+        Mean RMSE value (1/2 * (RMSE_col5 + RMSE_col8))
+    """
+    try:
+        # Convert predictions and validation data to the DF format
+        val = _convert_to_dataframe_fin_eng(val)
+        y_pred = _convert_to_dataframe_fin_eng(y_pred)
+
+        if 'col_5' not in val.columns:
+            # common.report_error("Validation data missing 'col_5' column")
+            return np.nan
+        if 'col_8' not in val.columns:
+            # common.report_error("Validation data missing 'col_8' column")
+            return np.nan
+        y_true_5 = val['col_5'].values
+        y_true_8 = val['col_8'].values
+
+        y_pred_5 = y_pred.iloc[:, 0].values
+        y_pred_8 = y_pred.iloc[:, 1].values
+        # in description evaluation is defined by using RMSE without further comments
+        # count RMSE on each column and count mean
+
+        def rmse(y_true, y_pred):
+            return np.sqrt(np.mean((y_true - y_pred) ** 2))
+
+        col5_rmse = rmse(y_true_5, y_pred_5)
+        col8_rmse = rmse(y_true_8, y_pred_8)
+
+        return (col5_rmse + col8_rmse) / 2
+    except Exception as e:
+        # report_error(f"Recommender grader execution failed: {e}")
+        return np.nan
+
 
 METRICS = {
     "roc_auc_score": roc_auc_score,
@@ -154,6 +228,7 @@ METRICS = {
     "f1_score_multilabel": f1_score_multilabel,
     "mean_average_precision": mean_average_precision_k,
     "r2_score": r2_score,
+    "mean_root_mean_squared_error": calculate_rmse
 }
 
 # Default grader
