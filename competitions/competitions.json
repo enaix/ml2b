@@ -210,7 +210,6 @@
         "target_col": "output",
         "direction": "minimize",
         "cv_folds": 1,
-        "output_hint": "predict the probability of an individual testing positive for COVID-19 (floats >= 0)",
         "files": {
             "train": {"type": "data", "required": true, "extensions": [".csv"]}
         },
