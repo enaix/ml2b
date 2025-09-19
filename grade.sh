@@ -78,6 +78,15 @@ if [[ "$REBUILD" == "true" ]]; then
     docker compose build bench_python
 fi
 
+
+cat > docker-compose.override.yml << EOF
+services:
+  bench_python:
+    volumes:
+      - ./python/submission/${SUBMISSION_NAME}/:/home/bench/submission
+EOF
+
+
 # Execute
 docker compose run bench_python
 

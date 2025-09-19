@@ -75,7 +75,7 @@ def _load_submission_code(codepath: os.PathLike) -> Any:
     spec.loader.exec_module(module)
     return module
 
-def load_mono_submission(submission_name: str) -> dict:
+def load_mono_submission() -> dict:
     try:
         mod = importlib.import_module("submission.code")  # loads the file 'submission.py'
         if not hasattr(mod, "train_and_predict"):
@@ -89,7 +89,7 @@ def load_mono_submission(submission_name: str) -> dict:
         common.graceful_exit(1)
 
 
-def load_modular_submission(submission_name: str) -> dict:
+def load_modular_submission() -> dict:
     try:
         mod = importlib.import_module("submission.code") # loads the file 'submission.py'
         funcs = {}
@@ -107,20 +107,14 @@ def load_modular_submission(submission_name: str) -> dict:
 def main():
     # Initialize logging
     common.bench_results.is_in_container = True
-    submission_name = os.environ.get("SUBMISSION_NAME")
-
-    if submission_name is None:
-        common.report_error("Environment variable SUBMISSION_NAME is unset")
-        common.graceful_exit(1)
-    common.bench_results.submission_name = submission_name
     # Init complete
 
     params = get_bench_params()
     params["submission_name"] = submission_name
     if params["bench_mode"] == BenchMode.MonolithicPredict:
-        train_code = load_mono_submission(submission_name)
+        train_code = load_mono_submission()
     else:
-        train_code = load_modular_submission(submission_name)
+        train_code = load_modular_submission()
 
     results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"), params.get("extended_schema"))
 
