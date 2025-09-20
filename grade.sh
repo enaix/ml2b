@@ -78,7 +78,7 @@ if [[ "$REBUILD" == "true" ]]; then
     docker compose build bench_python
 fi
 
-
+# Mount the submission folder using the override
 cat > docker-compose.override.yml << EOF
 services:
   bench_python:
@@ -90,4 +90,11 @@ EOF
 # Execute
 docker compose run bench_python
 
-cat ./python/submission/results.json
+# Remove the override
+rm docker-compose.override.yml
+
+
+echo "\nResults for ./python/submission/${SUBMISSION_NAME}"
+echo "======================"
+cat ./python/submission/${SUBMISSION_NAME}/results.json
+
