@@ -224,9 +224,10 @@ class BenchPipeline:
         network_name = "python_no_inet"
 
         # Check if the network exists
-        networks = [n.name for n in client.networks.list()]
-        if network_name not in networks:
+        try:
             client.networks.create(network_name, driver="bridge", internal=True)
+        except Exception as e:
+            logger.info("Network already exists, no error")
         container = client.containers.run(
             image=image_name,
             detach=True,
