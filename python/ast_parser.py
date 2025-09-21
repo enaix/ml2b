@@ -40,9 +40,9 @@ class TopLevelExecutionRemover(ast.NodeTransformer):
 
     def visit_If(self, node: ast.If) -> Optional[ast.If]:
         """Handle if statements, preserving if __name__ == "__main__" blocks."""
-        if self._is_main_guard(node):
-            # Skip the entire if __name__ == "__main__" block
-            return None
+        # if self._is_main_guard(node):
+        #     # Skip the entire if __name__ == "__main__" block
+        #     return None
         # Keep other if statements (they might be configuration logic)
         return self.generic_visit(node)
 

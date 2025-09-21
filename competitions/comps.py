@@ -24,7 +24,13 @@ competition_map = {
     "alfa-university-income-prediction": "alfa-university-income-prediction",
     "mlolympiadbd2025": "ml-olympiad-bd-2025",
     "playground-series-s5e6": "playground-series-s5e6",
-    "ml2021spring-hw1": "ml2021spring-hw1"
+    "ml2021spring-hw1": "ml2021spring-hw1",
+    "2020-11-20": "financial-engineering-3",
+    "thapar-summer-school-2025-hack-iii": "thapar-summer-school-2025-hack-iii",
+    "rutgers-data101-fall2022-assignment-12": "rutgers-data101-fall2022-assignment-12",
+    "2024-datalab-cup1": "2024-datalab-cup1",
+    "ece460j-fall24": "ece460j-fall24",
+    
 }
 import pandas as pd
 from pathlib import Path

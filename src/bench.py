@@ -244,7 +244,7 @@ class BenchPipeline:
         exit_code = container.wait(timeout=60*60)
         logs = container.logs().decode('utf-8')
 
-        logger.info("Evaluation container results:\n exit_code: {}\n logs: {}", exit_code, logs)
+        logger.info("Evaluation container results {}:\n exit_code: {}\n logs: {}", comp.comp_id, exit_code, logs)
         container.remove() 
         results_path = submission_dir / "results.json"
         if not os.path.exists(results_path):

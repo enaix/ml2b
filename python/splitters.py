@@ -242,6 +242,101 @@ class CSVDataSplitter(DataSplitter):
         return train_path, val_path, {}
 
 
+class MultilabelDataSplitter(DataSplitter):
+    """Standard multilabel CSV data splitter using train_test_split with 80:20 ratio"""
+
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
+        super().__init__(log_error, do_shutdown, grading_stage)
+
+    def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """Split data using train_test_split with 80:20 ratio"""
+        self.prepare_competition_files(comp)
+
+        train_file = comp.get_file("train")
+        if not train_file or not train_file.exists():
+            raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
+
+        # TODO implement multiple target_col
+
+        train_df = read_csv_smart(train_file.path)
+        target_col = comp.metadata.get("target_col")
+        if not target_col:
+            raise ValueError(f"No target_col specified in metadata for competition {comp.comp_id}")
+
+        X = train_df.drop(columns=[target_col])
+        y = train_df[target_col]
+
+        # Use train_test_split for a single 80:20 split
+        if n_splits != 1:
+            self.log_error(f"Warning: train_test_split only supports 1 split (80:20). Using n_splits=1 instead of {n_splits}")
+
+        # Perform the 80:20 split
+        X_train, X_val, y_train, y_val = train_test_split(
+            X, y,
+            test_size=0.2,
+            random_state=42,
+            shuffle=True,
+            stratify=y if comp.metadata.get("stratified_split", False) else None
+        )
+
+        # Convert to indices for compatibility
+        train_indices = X_train.index.values
+        val_indices = X_val.index.values
+
+        return [(train_indices, val_indices)]
+
+    def prepare_fold_data(self, comp: Competition, train_indices: np.ndarray, val_indices: np.ndarray,
+                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
+        """Prepare fold data and save to appropriate directories"""
+        train_file = comp.get_file("train")
+        train_df = read_csv_smart(train_file.path)
+        target_col = comp.metadata["target_col"]
+
+        # Split data using the provided indices
+        X, y = train_df.drop(columns=[target_col]), train_df[target_col]
+        y = y.apply(self._parse_multi_label_string)
+        X_train, y_train = X.iloc[train_indices], y.iloc[train_indices]
+        X_val, y_val = X.iloc[val_indices], y.iloc[val_indices]
+
+        # Save fold data
+        train_fold = pd.concat([X_train, y_train], axis=1)
+        train_path = Path(fold_dir) / f"fold_{fold_idx}"
+        train_path.mkdir(exist_ok=True, parents=True)
+        val_path = Path(private_dir) / f"fold_{fold_idx}"
+        val_path.mkdir(exist_ok=True, parents=True)
+
+        train_fold.to_csv(train_path / "train.csv", index=False)
+        X_val.to_csv(val_path / "X_val.csv", index=False)
+        y_val.to_csv(val_path / "y_val.csv", index=False)
+
+        return train_path, val_path, {}
+
+    def _parse_multi_label_string(self, label_str):
+        """Convert string representation like "[u'drama', u'comedy']" to actual list of strings."""
+        if isinstance(label_str, list):
+            return [str(item) for item in label_str]  # Ensure all items are strings
+
+        if not isinstance(label_str, str):
+            return [str(label_str)]  # Single value converted to list
+
+        if label_str.startswith('[') and label_str.endswith(']'):
+            try:
+                # Try to parse as Python list using ast.literal_eval
+                import ast
+                parsed = ast.literal_eval(label_str)
+                return parsed
+            except (ValueError, SyntaxError):
+                # Fallback: simple string parsing for malformed representations
+                cleaned = label_str.strip('[]')
+                # Handle various quote styles: u'genre', "genre", 'genre'
+                cleaned = cleaned.replace("u'", "").replace("'", "").replace('"', '')
+                items = [item.strip() for item in cleaned.split(',') if item.strip()]
+                return items if items else [label_str.strip()]
+
+        # Single label as string - return as list with one element
+        return [label_str.strip()]
+
+
 class ImageFolderDataSplitter(DataSplitter):
     """Data splitter for image classification with folder structure"""
 
@@ -589,7 +684,7 @@ class EMNISTDataSplitter(DataSplitter):
 
         # Load the original data
         with np.load(train_file.path) as data:
-            images = data['images']
+            images = np.squeeze(data['images'], axis=-1)
             labels = data['labels']
 
         # Split the data using the provided indices
@@ -729,5 +824,6 @@ DATA_SPLITTERS = {
     "time_series": TimeSeriesDataSplitter,
     "custom": CustomDataSplitter,
     "emnist": EMNISTDataSplitter,
-    "biker_recommender": BikerRecommenderDataSplitter
+    "biker_recommender": BikerRecommenderDataSplitter,
+    "multilabel": MultilabelDataSplitter,
 }

@@ -8,6 +8,7 @@ from enum import StrEnum
 import python.common as common
 from python.code_grader import grade_llm_code
 import python.ast_parser as ast_parser
+import traceback
 
 
 
@@ -82,7 +83,7 @@ def load_mono_submission() -> dict:
         try:
             mod = _load_submission_code()
         except BaseException:
-            common.report_error("Could not parse the AST of the submission. Trying to load the usual way...")
+            common.report_error(f"Could not parse the AST of the submission. Trying to load the usual way...\n{traceback.format_exc()}")
             mod = importlib.import_module("submission.code")
 
         if not hasattr(mod, "train_and_predict"):

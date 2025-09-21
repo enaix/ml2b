@@ -360,7 +360,7 @@ class DockerRunner:
         self,
     ) -> dict[str, Any]:
         self.tasks_manager = TasksManager(consumed_time=time.monotonic())
-        for _ in range(self.runner_spec.workers):
+        for i in range(self.runner_spec.workers):
             worker = asyncio.create_task(self.task_router())
             self.workers.append(worker)
         await asyncio.gather(*self.workers)

@@ -13,10 +13,15 @@ class BikersData(TypedDict):
     tour_convoy: Annotated[pd.DataFrame, 'Tour participation lists']
     bikers_network: Annotated[pd.DataFrame, 'Social network connections']
 
+class BikersTrain(BikersData):
+    data: Annotated[pd.DataFrame, 'Train data']
+
+class BikersVal(BikersData):
+    data: Annotated[pd.DataFrame, 'Validation data']
 
 class Dataset(TypedDict):
-    data: Annotated[BikersData, 'Training features']
-    X_val: Annotated[BikersData, 'Validation features']
+    X_train: Annotated[BikersTrain, 'Training features']
+    X_val: Annotated[BikersVal, 'Validation features']
 
 
 class BikerRecommenderDataLoader(DataLoader):
@@ -30,15 +35,15 @@ class BikerRecommenderDataLoader(DataLoader):
 
         # Load main training data
         train_path = os.path.join(fold_dir, f"train.csv")
-        if os.path.exists(train_path):
-            dataset['train'] = pd.read_csv(train_path)
 
         # Load training-filtered meta tables
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
             meta_path = os.path.join(fold_dir, f"{table}_train.csv")
             if os.path.exists(meta_path):
                 dataset[table] = pd.read_csv(meta_path)
-                dataset[table] = self._parse_table_specific_columns(dataset[table], table)
+                # dataset[table] = self._parse_table_specific_columns(dataset[table], table)
+        if os.path.exists(train_path):
+            dataset['data'] = pd.read_csv(train_path)
 
         return dataset
 
@@ -49,15 +54,15 @@ class BikerRecommenderDataLoader(DataLoader):
 
         # Load validation features
         x_val_path = os.path.join(fold_dir, f"X_val.csv")
-        if os.path.exists(x_val_path):
-            dataset['X_val'] = pd.read_csv(x_val_path)
 
         # Load validation-filtered meta tables
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
             meta_path = os.path.join(fold_dir, f"{table}_val.csv")
             if os.path.exists(meta_path):
                 dataset[table] = pd.read_csv(meta_path)
-                dataset[table] = self._parse_table_specific_columns(dataset[table], table)
+                # dataset[table] = self._parse_table_specific_columns(dataset[table], table)
+        if os.path.exists(x_val_path):
+            dataset['data'] = pd.read_csv(x_val_path)
 
         return dataset
 

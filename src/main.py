@@ -8,7 +8,7 @@ from loguru import logger
 from functools import partial
 from collections import defaultdict
 from typing import Any
-
+import traceback
 
 def merge_results(results: dict, result: dict, idx: int):
     for field in result.keys():
@@ -52,7 +52,11 @@ async def feed_competitions(bench: BenchPipeline, runner: DockerRunner):
     idx = 0
     while (competition := bench.next_competition()) is not None:
             comp_by_id[competition.comp_id] = competition
-            await asyncio.to_thread(bench.prepare_train_data, competition, runner.runner_spec.seed)
+            try:
+                await asyncio.to_thread(bench.prepare_train_data, competition, runner.runner_spec.seed)
+            except BaseException:
+                logger.info("Error preeparing data: {}", traceback.format_exc())
+                continue
 
             for lang in bench.languages():
                 for codelang in CodeLanguage:
@@ -94,7 +98,7 @@ async def execute_bench(runner_spec: RunnerSpec):
     runner = DockerRunner(runner_spec)
     bench = BenchPipeline(base_path, runner_spec.folds, runner.input_mode == RunnerInput.DescAndData)
     asyncio.create_task(feed_competitions(bench, runner))
-    results = await runner.run()
+    await runner.run()
 
 def run_benchmark(runner_spec: RunnerSpec) -> None:
     asyncio.run(execute_bench(runner_spec))

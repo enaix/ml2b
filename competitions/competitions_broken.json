@@ -1,3 +1,4 @@
+{
     "wids-datathon-2020": {
         "metric": "roc_auc_score",
         "target_col": "hospital_death",
@@ -70,7 +71,7 @@
             "test": {"filename": "wells_fargo_test.csv", "type": "data", "required": false}
         },
         "grader": "default"
-    }
+    },
 
     
     "ai-cancer-predictions": {
@@ -114,4 +115,5 @@
         "direction": "maximize",
         "cv_folds": 3,
         "output_hint": "probabilities for class 1 (floats in [0, 1])"
-    },
+    }
+}
