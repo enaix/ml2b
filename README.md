@@ -36,6 +36,10 @@ Execute the benchmark and put results to `python/submission/results.txt`:
 2) add lang tasts to competitions/tasks/
 3) add data for tasks to competitions/data/
 4) build agent runtime like
+*) load data
+```bash
+gdown --folder https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf
+```
 
 ```bash
 #for more information see: python run.py  build-runtime --help
