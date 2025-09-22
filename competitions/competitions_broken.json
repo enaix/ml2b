@@ -1,4 +1,42 @@
 {
+	"classify-leaves": {
+	    "metric": "accuracy_score",
+	    "target_col": "labels",
+	    "direction": "maximize",
+	    "cv_folds": 1,
+	    "output_hint": "predicted class labels (strings)",
+	    "files": {
+		"train": {"type": "data", "required": true, "extensions": [".csv"]}
+	    },
+	    "file_mapping": {
+		"train": {"filename": "train.csv", "type": "data", "required": true}
+	    },
+	    "split_strategy": "classify-leaves",
+	    "load_strategy": "classify-leaves",
+	    "grader": "classify_leaves",
+	    "stratified_split": true,
+	    "input_shape": [28, 28, 1],
+	    "num_classes": 62
+	},
+
+    "financial-engineering-3": {
+        "metric": "mean_root_mean_squared_error",
+        "target_col": ["col_5", "col_8"],
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted values for col_5 (floats), for col_8 binary predictions (0 or 1)",
+        "split_strategy": "csv",
+        "grader": "default"
+    },
+    "alfa-university-income-prediction": {
+        "metric": "calculate_wae",
+        "target_col": "target",
+        "extra_col": "w",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted values for target (floats)"
+    },
+
     "wids-datathon-2020": {
         "metric": "roc_auc_score",
         "target_col": "hospital_death",

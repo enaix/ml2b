@@ -1,12 +1,14 @@
 import pandas as pd
-import chardet
+from charset_normalizer import from_path
 
 def read_csv_smart(path: str, **kwargs) -> pd.DataFrame:
-    with open(path, "rb") as f:
-        raw = f.read(100_000)
-        result = chardet.detect(raw)
-        encoding = result["encoding"]
+    if "encoding" not in kwargs:
+        result = from_path(path).best()
+        encoding = result.encoding if result else "utf-8"
     try:
-        return pd.read_csv(path, encoding=encoding, **kwargs)
-    except BaseException:
-        return pd.read_csv(path, encoding=encoding, sep=";", **kwargs)
+        return pd.read_csv(path, **kwargs)
+    except Exception:
+        try:
+            return pd.read_csv(path, sep=";", **kwargs)
+        except Exception:
+            return pd.read_csv(path, sep=None, engine="python", encoding=encoding, **kwargs)

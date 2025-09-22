@@ -194,7 +194,7 @@ class CSVDataSplitter(DataSplitter):
         if not target_col:
             raise ValueError(f"No target_col specified in metadata for competition {comp.comp_id}")
 
-        X = train_df.drop(columns=[target_col])
+        X = train_df.drop(columns=target_col)
         y = train_df[target_col]
 
         # Use train_test_split for a single 80:20 split
@@ -224,7 +224,7 @@ class CSVDataSplitter(DataSplitter):
         target_col = comp.metadata["target_col"]
 
         # Split data using the provided indices
-        X, y = train_df.drop(columns=[target_col]), train_df[target_col]
+        X, y = train_df.drop(columns=target_col), train_df[target_col]
         X_train, y_train = X.iloc[train_indices], y.iloc[train_indices]
         X_val, y_val = X.iloc[val_indices], y.iloc[val_indices]
 

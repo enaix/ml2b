@@ -204,7 +204,7 @@ class DockerRunner:
                 container.name, e
             )
     
-    def execute(self, container: Container) -> None:
+    def execute(self, container: Container, task: Task) -> None:
         #need rewrite for usability
         command = ["bash", "agent/start.sh"]
         if self.agent_spec.kwargs_type == "argparse":
@@ -217,7 +217,7 @@ class DockerRunner:
         logger.info("Run command: {}", command)
         exit_code, output = container.exec_run(command, stream=True, user="nonroot")
         for chunk in output:
-            logger.info("[yellow]Container log[/yellow]\n {}", chunk.decode('utf-8').strip())
+            logger.info("[yellow]Container log {}[/yellow]\n {}", task.unique_name,  chunk.decode('utf-8').strip())
 
     def load_file(self, container: Container, load_dir: str, log_dir: Path) -> None:
         log_dir.mkdir(exist_ok=True, parents=True)
@@ -287,7 +287,7 @@ class DockerRunner:
             container = self.create_container(task, instructions_file)
 
             container.start()
-            self.execute(container)
+            self.execute(container, task)
             self.extract_artifacts(container, Path(self.runner_spec.logs_dir / task.unique_name).resolve())
         except Exception as e:
             raise e
