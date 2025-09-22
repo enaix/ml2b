@@ -53,6 +53,6 @@ def run({% for key, value in full_spec.items() %}{{ key }}: {{ value }}{% if not
 
     {{ full_doc | indent(4) }}
     """
-    train_output = train({% for key, value in train_spec.keys() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %})
-    return predict(train_output, prepare_val(train_output), {% for key, value in val_spec.keys() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %})
+    train_output = train({% for key in train_spec.keys() %}{{ key }}{% if not loop.last %}, {% endif %}{% endfor %})
+    return predict(train_output, prepare_val(train_output, {% for key in val_spec.keys() %}{{ key }}{% if not loop.last %}, {% endif %}{% endfor %})
 ```
