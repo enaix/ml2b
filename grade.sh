@@ -54,7 +54,7 @@ if [[ ! -d "./python/submission" ]]; then
     mkdir -p ./python/submission/
 fi
 
-if [[ ! -d "./python/submission/${SUBMISSION_NAME}" ]]; then
+if [[ -d "./python/submission/${SUBMISSION_NAME}" ]]; then
     echo "Directory exists: ./python/submission/${SUBMISSION_NAME}. Please move or delete old competition files"
     exit 1
 fi
