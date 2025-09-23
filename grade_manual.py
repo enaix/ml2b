@@ -40,6 +40,20 @@ def main():
     pipeline.prepare_train_data(target_comp, args.seed)
     print("✓ Data preparation complete on host.")
 
+    # 1.5 Ensure submission package __init__.py exists for Docker grading
+    submission_dir = os.path.join(
+        'python', 'submission', f"submission_{args.competition_id}-{args.lang}-python-only_code"
+    )
+    os.makedirs(submission_dir, exist_ok=True)
+    init_file = os.path.join(submission_dir, '__init__.py')
+    try:
+        if not os.path.exists(init_file):
+            with open(init_file, 'w', encoding='utf-8') as f:
+                f.write('')
+        print(f"✓ Ensured package file at {init_file}")
+    except Exception as e:
+        print(f"Warning: Could not create __init__.py at {init_file}: {e}")
+
     # 2. Call the existing grade.sh script to handle Docker
     print("[2/3] Invoking grade.sh to run inside Docker container...")
     try:
