@@ -1,12 +1,19 @@
 {
     "financial-engineering-3": {
-        "metric": "mean_root_mean_squared_error",
+        "metric": "root_mean_squared_error_multitarget",
         "target_col": ["col_5", "col_8"],
         "direction": "minimize",
-        "cv_folds": 3,
+        "cv_folds": 1,
         "output_hint": "predicted values for col_5 (floats), for col_8 binary predictions (0 or 1)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
         "split_strategy": "csv",
-        "grader": "default"
+        "load_strategy": "default",
+        "grader": "multitarget"
     },
 
     "financial-engineering-2": {
@@ -202,7 +209,7 @@
         "num_classes": 62
     },
     "tabular-playground-series-jul-2021": {
-        "metric": "root_mean_squared_logarithmic_error",
+        "metric": "root_mean_squared_logarithmic_error_multitarget",
         "target_col": ["target_carbon_monoxide", "target_benzene", "target_nitrogen_oxides"],
         "direction": "minimize",
         "cv_folds": 1,

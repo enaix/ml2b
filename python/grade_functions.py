@@ -137,41 +137,6 @@ def calculate_map_at_k(y_true_dict: Dict[int, List[int]], predictions_dict: Dict
 
     return np.mean(ap_scores)
 
-def _convert_to_dataframe_fin_eng(data) -> pd.DataFrame:
-    """
-    Convert various input formats to DataFrame.
-    Handles both validation labels and prediction formats.
-    """
-    if isinstance(data, pd.DataFrame):
-        return data
-    elif isinstance(data, np.ndarray):
-        if data.shape[1] == 2:
-            # Assume array has at least [biker_id, tour_id] columns
-            columns = ['col_5', 'col_8']
-            return pd.DataFrame(data, columns=columns)
-        elif data.shape[1] == 3:
-            # Assume array has at least [biker_id, tour_id] columns
-            columns = ['id', 'col_5', 'col_8']
-            return pd.DataFrame(data, columns=columns)
-        else:
-            raise ValueError("Array must have at least 2 columns for col_5 and col_8 predictions")
-    elif isinstance(data, list):
-        if data and isinstance(data[0], (list, tuple)):
-            if len(data[0]) == 3:
-                columns = ['id', 'col_5', 'col_8']
-            elif len(data[0]) == 2:
-                columns = ['col_5', 'col_8']
-            else:
-                raise ValueError("List must contain at list two lists or tuples")
-            # List of lists/tuples: [[col_5, col_8], ...]
-            return pd.DataFrame(data, columns=columns)
-        else:
-            raise ValueError("List must contain lists or tuples of [col_5, col_8]")
-    else:
-        raise ValueError(f"Unsupported data format: {type(data)}")
-
-
-def calculate_rmse(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
     """
     Calculate RMSE For col_5 and col_8
 
@@ -212,6 +177,46 @@ def calculate_rmse(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
         # report_error(f"Recommender grader execution failed: {e}")
         return np.nan
 
+def calculate_rmse(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
+    """
+    Calculate RMSE For col_5 and col_8
+
+    Args:
+        pred : DataFrame with predictions for 2 columns
+        val: DataFrame with true targets for 2 columns
+
+    Returns:
+        Mean RMSE value over all 2 columns
+    """
+    try:
+        if ('col_5' not in y_pred.columns or
+                'col_8' not in y_pred.columns):
+            common.report_error("Validation data missing target columns")
+            return np.nan
+
+        if 0 in val.columns or 1 in val.columns or 2 in val.columns:
+            val.rename(columns={0: 'col_5', 1: 'col_8'},
+                       inplace=True)
+
+        if ('col_5' not in val.columns or
+                'col_8' not in val.columns):
+            common.report_error("Validation data missing target columns")
+            return np.nan
+
+        y_true_col_5 = val['col_5'].values
+        y_true_col_8 = val['col_8'].values
+
+        y_pred_col_5 = y_pred.iloc[:, 0].values
+        y_pred_col_8 = y_pred.iloc[:, 1].values
+
+        # count RMSE on each column and count mean
+        col_5_rmse = np.sqrt(mean_squared_error(y_true_col_5, y_pred_col_5))
+        col_8_rmse = np.sqrt(mean_squared_error(y_true_col_8, y_pred_col_8))
+
+        return (col_5_rmse + col_8_rmse) / 2
+    except Exception as e:
+        return np.nan
+    
 
 def calculate_rmsle(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
     """
@@ -267,7 +272,6 @@ METRICS = {
     "precision_score_macro": lambda y_true, y_pred: precision_score(y_true, y_pred, average='macro'),
     "recall_score_macro": lambda y_true, y_pred: recall_score(y_true, y_pred, average='macro'),
     "root_mean_squared_error": root_mean_squared_error,
-    "root_mean_squared_logarithmic_error": calculate_rmsle,
     "log_loss": log_loss,
     "mean_squared_error": mean_squared_error,
     "mean_absolute_error": mean_absolute_error,
@@ -276,7 +280,8 @@ METRICS = {
     "f1_score_multilabel": f1_score_multilabel,
     "mean_average_precision": mean_average_precision_k,
     "r2_score": r2_score,
-    "mean_root_mean_squared_error": calculate_rmse
+    "root_mean_squared_logarithmic_error_multitarget": calculate_rmsle,
+    "root_mean_squared_error_multitarget": calculate_rmse
 }
 
 # Default grader
