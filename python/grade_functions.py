@@ -16,7 +16,8 @@ from sklearn.metrics import (
     matthews_corrcoef,
     balanced_accuracy_score,
     root_mean_squared_error,
-    r2_score
+    r2_score,
+    mean_squared_log_error
 )
 import python.common as common
 
@@ -169,6 +170,10 @@ def _convert_to_dataframe_fin_eng(data) -> pd.DataFrame:
     else:
         raise ValueError(f"Unsupported data format: {type(data)}")
 
+def root_mean_squared_logarithmic_error(y_true, y_pred):
+    """Calculate root mean squared logarithmic error"""
+    return np.sqrt(mean_squared_log_error(y_true, y_pred))
+
 def calculate_rmse(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
     """
     Calculate RMSE For col_5 and col_8
@@ -220,6 +225,7 @@ METRICS = {
     "precision_score_macro": lambda y_true, y_pred: precision_score(y_true, y_pred, average='macro'),
     "recall_score_macro": lambda y_true, y_pred: recall_score(y_true, y_pred, average='macro'),
     "root_mean_squared_error": root_mean_squared_error,
+    "root_mean_squared_logarithmic_error": root_mean_squared_logarithmic_error,
     "log_loss": log_loss,
     "mean_squared_error": mean_squared_error,
     "mean_absolute_error": mean_absolute_error,
@@ -525,6 +531,45 @@ def _convert_to_dataframe(data: Any) -> pd.DataFrame:
         raise ValueError(f"Unsupported data format: {type(data)}")
 
 
+def grader_multitarget(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+    """
+    Specialized grader for multi-target tasks.
+    """
+    metric = METRICS.get(comp["metric"])
+    if metric is None:
+        common.report_error(f"grader_multitarget() : internal error : metric not found : {comp['metric']}")
+        common.graceful_exit(1)
+
+    try:
+        # Handle different prediction formats
+        if isinstance(pred, np.ndarray):
+            pred = pd.DataFrame(pred)
+        elif isinstance(pred, list):
+            pred = pd.DataFrame(pred)
+
+        # Handle different validation formats
+        if isinstance(val, np.ndarray):
+            val = pd.DataFrame(val)
+        elif isinstance(val, list):
+            val = pd.DataFrame(val)
+
+        # Ensure both pred and val have the same shape
+        min_rows = min(pred.shape[0], val.shape[0])
+        min_cols = min(pred.shape[1], val.shape[1])
+        
+        pred = pred.iloc[:min_rows, :min_cols]
+        val = val.iloc[:min_rows, :min_cols]
+
+        # Flatten both arrays for metric calculation
+        pred_values = pred.values.flatten()
+        val_values = val.values.flatten()
+
+        score = metric(val_values, pred_values)
+        return score
+    except Exception as e:
+        common.report_error(f"Multitarget grader execution failed : {sys.exc_info()}")
+        return np.nan
+
 def grader_classify_leaves(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
     """
     Specialized grader for image classification tasks that handles string labels and different prediction formats.
@@ -576,6 +621,7 @@ GRADERS = {
     "recommendation": grader_prml_nov2020,  # Alias
     "binary_from_ranking": grader_binary_classification_from_ranking,
     "multilabel": grader_multilabel,
+    "multitarget": grader_multitarget,
     "biker_recommender": grader_biker_recommender,
     "classify_leaves": grader_classify_leaves
 }
