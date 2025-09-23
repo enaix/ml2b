@@ -13,7 +13,7 @@ def main():
     parser.add_argument('code_path', help='Path to the Python code file to test')
     parser.add_argument('--mode', '-m', choices=['mono', 'modular'], default='mono',
                        help='Execution mode: mono (monolithic) or modular (default: mono)')
-    parser.add_argument('--extended_schema', '-s', choices=['y', 'n'], default='n', help='Use extended schema for submission code')
+    parser.add_argument('--extended_schema', '-e', choices=['y', 'n'], default='n', help='Use extended schema for submission code')
     parser.add_argument('--folds', '-f', type=int, help='Override number of folds')
     parser.add_argument('--rebuild', '-r', action='store_true', 
                        help='Rebuild Docker container before running')
