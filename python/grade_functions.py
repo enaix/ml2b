@@ -413,6 +413,7 @@ def grader_multilabel(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
         common.report_error(f"Grader execution failed : {sys.exc_info()}")
         return np.nan
 
+
 def _parse_multi_label_string_grader(label_str):
     """Helper function for grader to parse multi-label strings"""
     # Same implementation as in DataLoader
@@ -524,6 +525,48 @@ def _convert_to_dataframe(data: Any) -> pd.DataFrame:
         raise ValueError(f"Unsupported data format: {type(data)}")
 
 
+def grader_classify_leaves(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+    """
+    Specialized grader for image classification tasks that handles string labels and different prediction formats.
+    """
+    metric = METRICS.get(comp["metric"])
+    if metric is None:
+        common.report_error(f"grader_image_classification() : internal error : metric not found : {comp['metric']}")
+        common.graceful_exit(1)
+
+    try:
+        # Handle different prediction formats
+        if isinstance(pred, list):
+            # Convert list to pandas Series
+            pred = pd.Series(pred)
+        elif isinstance(pred, np.ndarray):
+            pred = pd.Series(pred)
+
+        # Handle different validation formats
+        if isinstance(val, pd.DataFrame):
+            val = val.iloc[:, 0] if val.shape[1] == 1 else val
+        elif isinstance(val, list):
+            val = pd.Series(val)
+        elif isinstance(val, np.ndarray):
+            val = pd.Series(val)
+
+        # Ensure both pred and val have the same length
+        min_len = min(len(pred), len(val))
+        pred = pred.iloc[:min_len] if hasattr(pred, 'iloc') else pred[:min_len]
+        val = val.iloc[:min_len] if hasattr(val, 'iloc') else val[:min_len]
+
+        # For image classification, we might need to handle string labels
+        # Convert to string if needed for comparison
+        if pred.dtype == 'object' and val.dtype == 'object':
+            pred = pred.astype(str)
+            val = val.astype(str)
+
+        score = metric(val, pred)
+        return score
+    except Exception as e:
+        common.report_error(f"Image classification grader execution failed : {sys.exc_info()}")
+        return np.nan
+
 
 # Updated GRADERS registry
 GRADERS = {
@@ -533,6 +576,7 @@ GRADERS = {
     "recommendation": grader_prml_nov2020,  # Alias
     "binary_from_ranking": grader_binary_classification_from_ranking,
     "multilabel": grader_multilabel,
-    "biker_recommender": grader_biker_recommender
+    "biker_recommender": grader_biker_recommender,
+    "classify_leaves": grader_classify_leaves
 }
 
