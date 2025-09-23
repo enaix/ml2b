@@ -170,9 +170,6 @@ def _convert_to_dataframe_fin_eng(data) -> pd.DataFrame:
     else:
         raise ValueError(f"Unsupported data format: {type(data)}")
 
-def root_mean_squared_logarithmic_error(y_true, y_pred):
-    """Calculate root mean squared logarithmic error"""
-    return np.sqrt(mean_squared_log_error(y_true, y_pred))
 
 def calculate_rmse(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
     """
@@ -216,6 +213,51 @@ def calculate_rmse(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
         return np.nan
 
 
+def calculate_rmsle(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
+    """
+    Calculate RMSLE For target_carbon_monoxide, target_benzene and target_nitrogen_oxides
+
+    Args:
+        pred : DataFrame with predictions for 3 columns
+        val: DataFrame with true targets for 3 columns
+
+    Returns:
+        Mean RMSLE value over all 3 columns
+    """
+    try:
+        if ('target_carbon_monoxide' not in y_pred.columns or
+                'target_benzene' not in y_pred.columns or
+                'target_nitrogen_oxides' not in y_pred.columns):
+            common.report_error("Validation data missing target columns")
+            return np.nan
+
+        if 0 in val.columns or 1 in val.columns or 2 in val.columns:
+            val.rename(columns={0: 'target_carbon_monoxide', 1: 'target_benzene', 2: 'target_nitrogen_oxides'}, inplace=True)
+
+        if ('target_carbon_monoxide' not in val.columns or
+                'target_benzene' not in val.columns or
+                'target_nitrogen_oxides' not in val.columns):
+            common.report_error("Validation data missing target columns")
+            return np.nan
+
+        y_true_carbon_monoxide = val['target_carbon_monoxide'].values
+        y_true_benzene = val['target_benzene'].values
+        y_true_nitrogen_oxides = val['target_nitrogen_oxides'].values
+
+        y_pred_carbon_monoxide = y_pred.iloc[:, 0].values
+        y_pred_benzene = y_pred.iloc[:, 1].values
+        y_pred_nitrogen_oxides = y_pred.iloc[:, 2].values
+
+        # count RMSLE on each column and count mean
+        carbon_monoxide_rmse = np.sqrt(mean_squared_log_error(y_true_carbon_monoxide, y_pred_carbon_monoxide))
+        benzene_rmse = np.sqrt(mean_squared_log_error(y_true_benzene, y_pred_benzene))
+        nitrogen_oxides_rmse = np.sqrt(mean_squared_log_error(y_true_nitrogen_oxides, y_pred_nitrogen_oxides))
+
+        return (carbon_monoxide_rmse + benzene_rmse + nitrogen_oxides_rmse) / 3
+    except Exception as e:
+        return np.nan
+    
+
 METRICS = {
     "roc_auc_score": roc_auc_score,
     "f1_score": f1_score,
@@ -225,7 +267,7 @@ METRICS = {
     "precision_score_macro": lambda y_true, y_pred: precision_score(y_true, y_pred, average='macro'),
     "recall_score_macro": lambda y_true, y_pred: recall_score(y_true, y_pred, average='macro'),
     "root_mean_squared_error": root_mean_squared_error,
-    "root_mean_squared_logarithmic_error": root_mean_squared_logarithmic_error,
+    "root_mean_squared_logarithmic_error": calculate_rmsle,
     "log_loss": log_loss,
     "mean_squared_error": mean_squared_error,
     "mean_absolute_error": mean_absolute_error,
@@ -557,12 +599,8 @@ def grader_multitarget(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
         min_rows = min(pred.shape[0], val.shape[0])
         min_cols = min(pred.shape[1], val.shape[1])
         
-        pred = pred.iloc[:min_rows, :min_cols]
-        val = val.iloc[:min_rows, :min_cols]
-
-        # Flatten both arrays for metric calculation
-        pred_values = pred.values.flatten()
-        val_values = val.values.flatten()
+        pred_values = pred.iloc[:min_rows, :min_cols]
+        val_values = val.iloc[:min_rows, :min_cols]
 
         score = metric(val_values, pred_values)
         return score
