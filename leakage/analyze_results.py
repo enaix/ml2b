@@ -1,10 +1,138 @@
 import os
 import re
 import sys
+import ast
 import argparse
 import pandas as pd
 from pathlib import Path
 from bs4 import BeautifulSoup
+from typing import List, Dict, Any, Union
+
+
+
+# Functions analysis code
+def find_funcs_for_loc(fname: os.PathLike, loc: List) -> List:
+    """
+    Find Python functions that contain the specified line numbers.
+
+    Args:
+        fname: Path to the Python file
+        loc: List of line numbers to search for
+
+    Returns:
+        List of dictionaries containing function information:
+        - 'name': Function name
+        - 'args': List of argument names
+        - 'start_line': Starting line number of the function
+        - 'end_line': Ending line number of the function
+        - 'contains_lines': List of input line numbers that fall within this function
+    """
+    if not loc:
+        return []
+
+    # Read the file content
+    try:
+        with open(fname, 'r', encoding='utf-8') as f:
+            content = f.read()
+            lines = content.splitlines()
+    except (IOError, OSError) as e:
+        raise FileNotFoundError(f"Could not read file {fname}: {e}")
+
+    # Parse the AST
+    try:
+        tree = ast.parse(content)
+    except SyntaxError as e:
+        raise SyntaxError(f"Could not parse Python file {fname}: {e}")
+
+    # Find all function definitions
+    functions = []
+
+    class FunctionVisitor(ast.NodeVisitor):
+        def visit_FunctionDef(self, node):
+            # Get function arguments
+            args = []
+
+            # Regular arguments
+            for arg in node.args.args:
+                args.append(arg.arg)
+
+            # *args
+            if node.args.vararg:
+                args.append(f"*{node.args.vararg.arg}")
+
+            # Keyword-only arguments
+            for arg in node.args.kwonlyargs:
+                args.append(arg.arg)
+
+            # **kwargs
+            if node.args.kwarg:
+                args.append(f"**{node.args.kwarg.arg}")
+
+            # Find the end line of the function
+            end_line = node.lineno
+
+            # Walk through all nodes in the function to find the maximum line number
+            for child in ast.walk(node):
+                if hasattr(child, 'lineno') and child.lineno > end_line:
+                    end_line = child.lineno
+
+            # Also check the last line with content in the function's scope
+            # by looking at indentation
+            start_line = node.lineno
+            base_indent = None
+
+            # Find base indentation of the function
+            if start_line <= len(lines):
+                func_line = lines[start_line - 1]
+                base_indent = len(func_line) - len(func_line.lstrip())
+
+            # Scan forward from the AST end_line to find actual end
+            if base_indent is not None:
+                for i in range(end_line, len(lines)):
+                    line = lines[i]
+                    if line.strip():  # Non-empty line
+                        line_indent = len(line) - len(line.lstrip())
+                        if line_indent <= base_indent and not line.lstrip().startswith(('"""', "'''")):
+                            # Found a line at same or lower indentation, function ends at previous line
+                            break
+                    end_line = i + 1
+
+            functions.append({
+                'name': node.name,
+                'args': args,
+                'start_line': start_line,
+                'end_line': end_line,
+                'node': node  # Keep for nested function handling
+            })
+
+            # Continue visiting for nested functions
+            self.generic_visit(node)
+
+        def visit_AsyncFunctionDef(self, node):
+            # Handle async functions the same way
+            self.visit_FunctionDef(node)
+
+    visitor = FunctionVisitor()
+    visitor.visit(tree)
+
+    # Remove the 'node' key as it's not needed in the output
+    for func in functions:
+        del func['node']
+
+    # Filter functions that contain any of the specified line numbers
+    result = set()
+    for func in functions:
+        contains_lines = []
+        for line_num in loc:
+            if func['start_line'] <= line_num <= func['end_line']:
+                contains_lines.append(line_num)
+
+        if contains_lines:
+            func['contains_lines'] = contains_lines
+            result.add(func)
+
+    return list(result)  # set to list
+
 
 
 def extract_python_file_info(py_file_path):
@@ -182,13 +310,21 @@ def process_files_in_folder(folder_path):
             html_relative_path = os.path.relpath(html_file, current_dir)
         else:
             print(f"Warning: No corresponding HTML file found for {py_file}")
-        
+
+        # Extract LOC <-> function info
+
+        if html_info["mark_leak_lines"] is not pd.NA:
+           funcs_info = find_funcs_for_loc(py_file, html_info["mark_leak_lines"])
+        else:
+            funcs_info = pd.NA
+
         # Combine all information
         row_data = {
             'python_file_path': py_relative_path,
             'html_file_path': html_relative_path,
             **py_info,
-            **html_info
+            **html_info,
+            'funcs_info': funcs_info
         }
         
         data.append(row_data)
