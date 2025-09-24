@@ -131,7 +131,7 @@ def find_funcs_for_loc(fname: os.PathLike, loc: List) -> List:
             func['contains_lines'] = contains_lines
             result.append(func)
 
-    return list({v["start_loc"]:v for v in result}.values())  # find unique [start, end]
+    return list({v["start_line"]:v for v in result}.values())  # find unique [start, end]
 
 
 
