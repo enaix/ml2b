@@ -24,16 +24,17 @@ def extract_python_file_info(py_file_path):
     
     # Extract entrypoint status from second line (remove leading #)
     entrypoint_status = lines[1].strip().lstrip('#').strip() if len(lines) > 1 else ""
+
+    traceback = None
   
     if len(lines) >= 4:
         # Parse the error string
         error_status = lines[2][3:]   # Remove the """ comment start
-        if lines[3] == "\"\"\"":
-            traceback = None
-        else:
+        if lines[3] != "\"\"\"":
+            traceback = ""
             for i in range(3, len(lines)):
                 if lines[i] != "\"\"\"":
-                    traceback += lines[i]
+                    traceback += lines[i] + " "
                 else:
                     break
     else:
