@@ -122,11 +122,11 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
                     # Predict phase
                     predictions = train_code["predict"](train_output, val_prepared)
 
-                    # Grade the predictions against true labels
-                    # common.report_error(f"Grader shapes : pred {predictions.shape}; val_prepared {val_prepared.shape}; val_labels {val_labels.shape}")
-                    score = GRADERS[grader](predictions, val_labels, comp.metadata)
-                    scores.append(score)
-                    print(f"grade_llm_code() : finished fold {fold_idx+1}/{folds}")
+                # Grade the predictions against true labels
+                # common.report_error(f"Grader shapes : pred {predictions.shape}; val_prepared {val_prepared.shape}; val_labels {val_labels.shape}")
+                score = GRADERS[grader](predictions, val_labels, comp.metadata)
+                scores.append(score)
+                print(f"grade_llm_code() : finished fold {fold_idx+1}/{folds}")
 
             except Exception as e:
                 common.report_error(f"Error during fold {fold_idx} execution: {traceback.format_exc()}")
