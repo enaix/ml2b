@@ -120,7 +120,7 @@ def find_funcs_for_loc(fname: os.PathLike, loc: List) -> List:
         del func['node']
 
     # Filter functions that contain any of the specified line numbers
-    result = set()
+    result = []
     for func in functions:
         contains_lines = []
         for line_num in loc:
@@ -129,9 +129,9 @@ def find_funcs_for_loc(fname: os.PathLike, loc: List) -> List:
 
         if contains_lines:
             func['contains_lines'] = contains_lines
-            result.add(func)
+            result.append(func)
 
-    return list(result)  # set to list
+    return list({v["start_loc"]:v for v in result}.values())  # find unique [start, end]
 
 
 
