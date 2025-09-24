@@ -19,7 +19,7 @@ Install the [souffle](https://souffle-lang.github.io/install) package
 
 #### Build the `pyright` package:
 
-`npm install --g lerna@4.0.0`
+`cd pyright`
 
 `npm install`
 

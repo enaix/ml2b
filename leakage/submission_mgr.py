@@ -17,6 +17,7 @@ class EntrypointAnalyzer(ast.NodeVisitor):
         self.has_main_guard = False
         self.has_top_level_executable = False
         self.run_function = None
+        self.train_and_predict = None
     
     def visit_If(self, node):
         """Check for if __name__ == "__main__" pattern."""
@@ -35,6 +36,8 @@ class EntrypointAnalyzer(ast.NodeVisitor):
         """Find the run function definition."""
         if node.name == "run":
             self.run_function = node
+        elif node.name == "train_and_predict":
+            self.train_and_predict = node
         # Don't traverse into function bodies for top-level executable detection
     
     def visit_Call(self, node):
@@ -78,33 +81,27 @@ def analyze_entrypoint(code):
         has_entrypoint = analyzer.has_main_guard or analyzer.has_top_level_executable
         
         run_function_info = None
-        if analyzer.run_function:
+
+        func_to_analyze = None
+        # run() has greater priority
+        if analyzer.run_function is not None:
+            func_to_analyze = analyzer.run_function
+        elif analyzer.train_and_predict is not None:
+            func_to_analyze = analyzer.train_and_predict
+
+        if func_to_analyze is not None:
             # Extract function signature information
-            func = analyzer.run_function
             args_info = []
             
-            for arg in func.args.args:
+            for arg in func_to_analyze.args.args:
                 arg_name = arg.arg
                 arg_type = None
-                #if arg.annotation:
-                #    if isinstance(arg.annotation, ast.Name):
-                #        arg_type = arg.annotation.id
-                #    elif isinstance(arg.annotation, ast.Attribute):
-                #        # Handle types like pd.DataFrame
-                #        arg_type = ast.unparse(arg.annotation)
-                #    else:
-                #        arg_type = ast.unparse(arg.annotation)
                 args_info.append((arg_name, arg_type))
             
             return_type = None
-            #if func.returns:
-            #    if isinstance(func.returns, ast.Name):
-            #        return_type = func.returns.id
-            #    else:
-            #        return_type = ast.unparse(func.returns)
-            
+
             run_function_info = {
-                'name': func.name,
+                'name': func_to_analyze.name,
                 'args': args_info,
                 'return_type': return_type
             }
@@ -208,7 +205,7 @@ def process_submission_files(input_dir, output_dir, add_entrypoint=False):
                     print(f"  No entrypoint found and no run() function in {file_path}")
            
             # Create the comment section
-            path_comment = f"# {file_path}\n# " + (("ENTRYPOINT_ADDED" if (not has_entrypoint and run_function_info) else "ENTRYPOINT_NOT_ADDED") if add_entrypoint else "ENTRYPOINT_NOT_CHECKED") + "\n"
+            path_comment = f"# {file_path}\n# " + (("ENTRYPOINT_ADDED" if (not has_entrypoint and run_function_info) else ("ENTRYPOINT_NOT_ADDED" if has_entrypoint else "ENTRYPOINT_ERROR_NO_FUNC")) if add_entrypoint else "ENTRYPOINT_NOT_CHECKED") + "\n"
 
             # Combine comment with processed content
             new_content = path_comment + generate_error_string(error_code) + processed_content
@@ -321,7 +318,7 @@ def process_with_structure(input_dir, output_dir, add_entrypoint=False):
                     print(f"  No entrypoint found and no run() function in {file_path}")
            
             # Create the comment section
-            path_comment = f"# {file_path}\n# " + (("ENTRYPOINT_ADDED" if (not has_entrypoint and run_function_info) else "ENTRYPOINT_NOT_ADDED") if add_entrypoint else "ENTRYPOINT_NOT_CHECKED") + "\n"
+            path_comment = f"# {file_path}\n# " + (("ENTRYPOINT_ADDED" if (not has_entrypoint and run_function_info) else ("ENTRYPOINT_NOT_ADDED" if has_entrypoint else "ENTRYPOINT_ERROR_NO_FUNC")) if add_entrypoint else "ENTRYPOINT_NOT_CHECKED") + "\n"
 
             # Combine comment with processed content
             new_content = path_comment + generate_error_string(error_code) + processed_content

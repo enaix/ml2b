@@ -65,6 +65,7 @@ def extract_html_info(html_file_path):
     no_independence = 0
     highlight_lines = []
     mark_leak_lines = []
+    warnings        = []
     
     # Extract leakage counts from the summary table
     sum_table = soup.find('table', class_='sum')
@@ -86,7 +87,16 @@ def extract_html_info(html_file_path):
                         no_independence = count_int
                 except ValueError:
                     pass
-    
+
+    all_buttons = soup.find_all('button')
+
+    for button in all_buttons:
+        # Find all red buttons (aka warnings)
+        style = button.get('style', '')
+        is_match = re.search(r'background-color: red', style)
+        if is_match:
+            warnings.append(button.text)
+
     # Extract highlight lines from buttons
     highlight_buttons = soup.find_all('button', string=re.compile(r'highlight train/test sites'))
     
@@ -120,7 +130,8 @@ def extract_html_info(html_file_path):
         'overlap_leakage': overlap_leakage,
         'no_independence': no_independence,
         'highlight_lines': highlight_lines,
-        'mark_leak_lines': mark_leak_lines
+        'mark_leak_lines': mark_leak_lines,
+        'warnings': warnings
     }
 
 
@@ -159,7 +170,8 @@ def process_files_in_folder(folder_path):
             'overlap_leakage': pd.NA,
             'no_independence': pd.NA,
             'highlight_lines': pd.NA,
-            'mark_leak_lines': pd.NA
+            'mark_leak_lines': pd.NA,
+            'warnings': pd.NA
         }
         html_relative_path = pd.NA
         
