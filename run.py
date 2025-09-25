@@ -1,17 +1,16 @@
 """
 Module for simplifying benchmark setup and execution.
 """
-import typer
 from pathlib import Path
 from src.main import run_benchmark
 from loguru import logger
-from typing import Annotated, Literal
 from environments import build_image, BuildArgs
 from src.runners import RunnerSpec
 from src.utils.setup_logger import setup_logger
 import click
 import docker
 import time
+from competitions import load_data
 
 
 @click.group()
@@ -171,6 +170,15 @@ def bench(image_name: str, workers: int, data_dir: Path,
     setup_logger(runner_spec.log_level, runner_spec.logs_dir, file_log_level=runner_spec.log_level)
     logger.info(f"[blue]Run benchmark with runner spec:\n{runner_spec.model_dump_json(indent=2)}[/blue]")
     run_benchmark(runner_spec)
+
+
+@cli.command()
+def prepare_data():
+    """
+    Prepare data for benchmark run
+    """
+    load_data()
+
 
 if __name__ == "__main__":
     cli()

@@ -1,6 +1,4 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union, TypedDict, Annotated
-import numpy as np
+from typing import TypedDict, Annotated
 import pandas as pd
 
 from python.competition import *
@@ -34,7 +32,7 @@ class BikerRecommenderDataLoader(DataLoader):
         fold_dir = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}")
 
         # Load main training data
-        train_path = os.path.join(fold_dir, f"train.csv")
+        train_path = os.path.join(fold_dir, "train.csv")
 
         # Load training-filtered meta tables
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
@@ -53,7 +51,7 @@ class BikerRecommenderDataLoader(DataLoader):
         fold_dir = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}")
 
         # Load validation features
-        x_val_path = os.path.join(fold_dir, f"X_val.csv")
+        x_val_path = os.path.join(fold_dir, "X_val.csv")
 
         # Load validation-filtered meta tables
         for table in ['bikers', 'tours', 'tour_convoy', 'bikers_network']:
@@ -68,7 +66,7 @@ class BikerRecommenderDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> pd.DataFrame:
         """Load validation labels from private directory."""
-        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
+        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", "y_val.csv")
 
         if os.path.exists(y_val_path):
             return pd.read_csv(y_val_path)

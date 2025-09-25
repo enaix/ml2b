@@ -1,6 +1,6 @@
 from typing import Any
 import sys
-from typing import List, Dict, Tuple
+from typing import List, Dict
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -173,7 +173,7 @@ def calculate_map_at_k(y_true_dict: Dict[int, List[int]], predictions_dict: Dict
         col8_rmse = rmse(y_true_8, y_pred_8)
 
         return (col5_rmse + col8_rmse) / 2
-    except Exception as e:
+    except Exception:
         # report_error(f"Recommender grader execution failed: {e}")
         return np.nan
 
@@ -214,7 +214,7 @@ def calculate_rmse(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
         col_8_rmse = np.sqrt(mean_squared_error(y_true_col_8, y_pred_col_8))
 
         return (col_5_rmse + col_8_rmse) / 2
-    except Exception as e:
+    except Exception:
         return np.nan
     
 
@@ -259,7 +259,7 @@ def calculate_rmsle(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
         nitrogen_oxides_rmse = np.sqrt(mean_squared_log_error(y_true_nitrogen_oxides, y_pred_nitrogen_oxides))
 
         return (carbon_monoxide_rmse + benzene_rmse + nitrogen_oxides_rmse) / 3
-    except Exception as e:
+    except Exception:
         return np.nan
     
 
@@ -310,7 +310,7 @@ def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
 
         score = metric(val_values, pred_values)
         return score
-    except Exception as e:
+    except Exception:
         common.report_error(f"Grader execution failed : {sys.exc_info()}")
         return np.nan
 
@@ -462,7 +462,7 @@ def grader_multilabel(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
         
         score = metric(val_values, pred_values)
         return score
-    except Exception as e:
+    except Exception:
         common.report_error(f"Grader execution failed : {sys.exc_info()}")
         return np.nan
 
@@ -609,7 +609,7 @@ def grader_multitarget(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
 
         score = metric(val_values, pred_values)
         return score
-    except Exception as e:
+    except Exception:
         common.report_error(f"Multitarget grader execution failed : {sys.exc_info()}")
         return np.nan
 
@@ -651,7 +651,7 @@ def grader_classify_leaves(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
 
         score = metric(val, pred)
         return score
-    except Exception as e:
+    except Exception:
         common.report_error(f"Image classification grader execution failed : {sys.exc_info()}")
         return np.nan
 

@@ -2,7 +2,7 @@ from .runners import DockerRunner
 from src.bench import *
 import asyncio
 from .runners import RunnerSpec, Task
-from .bench import Competition, Language, CodeLanguage, RunnerInput, RunnerOutput, BenchPipeline
+from .bench import Competition, Language, CodeLanguage, RunnerInput, BenchPipeline
 from pathlib import Path
 from loguru import logger
 from functools import partial

@@ -1,6 +1,4 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union, TypedDict, Annotated
-import numpy as np
+from typing import Any, Dict, TypedDict, Annotated
 import pandas as pd
 
 from python.competition import *
@@ -19,7 +17,7 @@ class DefaultDataLoader(DataLoader):
 
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load training data from hardcoded path"""
-        train_path = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}", f"train.csv")
+        train_path = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}", "train.csv")
 
         if os.path.exists(train_path):
             dataset = read_csv_smart(train_path)
@@ -30,7 +28,7 @@ class DefaultDataLoader(DataLoader):
 
     def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load validation features from hardcoded path"""
-        val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"X_val.csv")
+        val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", "X_val.csv")
 
         if os.path.exists(val_path):
             dataset = read_csv_smart(val_path)
@@ -41,7 +39,7 @@ class DefaultDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> pd.DataFrame:
         """Load validation labels from hardcoded path"""
-        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
+        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", "y_val.csv")
 
         if os.path.exists(y_val_path):
             return read_csv_smart(y_val_path)

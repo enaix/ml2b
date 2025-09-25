@@ -1,31 +1,25 @@
 {
-    "financial-engineering-3": {
-        "metric": "root_mean_squared_error_multitarget",
-        "target_col": ["col_5", "col_8"],
-        "direction": "minimize",
-        "cv_folds": 1,
-        "output_hint": "predicted values for col_5 (floats), for col_8 binary predictions (0 or 1)",
-        "files": {
-            "train": {"type": "data", "required": true, "extensions": [".csv"]}
-        },
-        "file_mapping": {
-            "train": {"filename": "train.csv", "type": "data", "required": true}
-        },
-        "split_strategy": "csv",
-        "load_strategy": "default",
-        "grader": "multitarget"
+    "wids-datathon-2020": {
+        "metric": "roc_auc_score",
+        "target_col": "hospital_death",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
     },
-
-    "financial-engineering-2": {
+    "ieor-242-nyc-taxi": {
         "metric": "root_mean_squared_error",
-        "target_col": "col_5",
+        "target_col": "duration",
         "direction": "minimize",
         "cv_folds": 3,
-        "output_hint": "predicted values for col_5 (floats)",
-        "split_strategy": "csv",
-        "grader": "default"
+        "output_hint": "predicted durations (floats >= 0)"
     },
-
+    "explicit-content-detection": {
+        "metric": "f1_score",
+        "target_col": "target",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "binary predictions (0 or 1)"
+    },
     "emnist-handwritten-chars": {
         "metric": "accuracy_score",
         "target_col": "labels",
@@ -45,7 +39,45 @@
         "input_shape": [28, 28, 1],
         "num_classes": 62
     },
-
+    "uwaterloo-stat441-jewelry": {
+        "metric": "roc_auc_score",
+        "target_col": "Revenue",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "financial-engineering-1": {
+        "metric": "mean_squared_error",
+        "target_col": "col_5",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted values for col_5 (floats)"
+    },
+    "financial-engineering-2": {
+        "metric": "root_mean_squared_error",
+        "target_col": "col_5",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted values for col_5 (floats)",
+        "split_strategy": "csv",
+        "grader": "default"
+    },
+    "financial-engineering-3": {
+        "metric": "root_mean_squared_error_multitarget",
+        "target_col": ["col_5", "col_8"],
+        "direction": "minimize",
+        "cv_folds": 1,
+        "output_hint": "predicted values for col_5 (floats), for col_8 binary predictions (0 or 1)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "multitarget"
+    },
     "biker-tour-recommendation": {
         "metric": "mean_average_precision",
         "target_col": "like",
@@ -70,23 +102,26 @@
         "load_strategy": "biker_recommender",
         "grader": "biker_recommender"
     },
-
-    "movie-genre-classification": {
-        "metric": "f1_score_multilabel",
-        "target_col": "genres",
-        "direction": "maximize",
+   "actuarial-loss-prediction": {
+        "metric": "root_mean_squared_error",
+        "target_col": "UltimateIncurredClaimCost",
+        "direction": "minimize",
         "cv_folds": 1,
-        "output_hint": "predicted genres (list of strings or multi-label format)",
+        "output_hint": "predicted total claims payments (floats >= 0)",
         "files": {
-            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+	      "train": {"type": "data", "required": true, "extensions": [".csv"]}
         },
         "file_mapping": {
-            "train": {"filename": "train.csv", "type": "data", "required": true}
-        },
-        "split_strategy": "multilabel",
-        "grader": "multilabel"
+	      "train": {"filename": "train.csv", "type": "data", "required": true}
+        }
     },
-
+    "she-hacks-2021": {
+        "metric": "root_mean_squared_error",
+        "target_col": "Unique Headcount",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "integer counts >= 0"
+    },
     "ml2021spring-hw1": {
         "metric": "root_mean_squared_error",
         "target_col": "tested_positive3",
@@ -104,74 +139,41 @@
         "grader": "default",
         "stratified_split": false
     },
-
-    "ai-cancer-predictions": {
+    "syde-522-winter-2021": {
         "metric": "accuracy_score",
-        "target_col": "diagnosis",
+        "target_col": "label",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "class labels (integers)"
+    },
+    "google-brain-ventilator": {
+        "metric": "mean_absolute_error",
+        "target_col": "pressure",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted pressure values (floats, in cmH2O)"
+    },
+   "porto-seguro-challenge": {
+        "metric": "f1_score",
+        "target_col": "y",
         "direction": "maximize",
         "cv_folds": 3,
         "output_hint": "binary predictions (0 or 1)"
     },
-
-    "alfa-university-income-prediction": {
-        "metric": "calculate_wae",
-        "target_col": "target",
-        "extra_col": "w",
+    "crime-learn": {
+        "metric": "root_mean_squared_error",
+        "target_col": "ViolentCrimesPerPop",
         "direction": "minimize",
         "cv_folds": 3,
-        "output_hint": "predicted values for target (floats)"
+        "output_hint": "predicted crime rates (floats >= 0)"
     },
-
-    "thapar-summer-school-2025-hack-iii": {
-        "metric": "r2_score",
-        "target_col": "output",
-        "direction": "minimize",
-        "cv_folds": 1,
-        "files": {
-            "train": {"type": "data", "required": true, "extensions": [".csv"]}
-        },
-        "file_mapping": {
-            "train": {"filename": "train.csv", "type": "data", "required": true}
-        },
-        "split_strategy": "csv",
-        "load_strategy": "default",
-        "grader": "default"
-    },
-
-    "2024-datalab-cup1": {
-		"metric": "roc_auc_score",
-        "target_col": "Popularity",
+    "stroke-prediction-s3e2": {
+        "metric": "roc_auc_score",
+        "target_col": "stroke",
         "direction": "maximize",
-        "cv_folds": 1,
-        "split_strategy": "csv"
-	},
-
-    "rutgers-data101-fall2022-assignment-12": {
-        "metric": "root_mean_squared_error",
-        "target_col": "tripduration",
-        "direction": "minimize",
-        "cv_folds": 1,
-        "output_hint": "predicted values for 'tripduration' (floats)",
-        "split_strategy": "csv"
+        "cv_folds": 3,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
     },
-
-    "ece460j-fall24": {
-        "metric": "log_loss",
-        "target_col": "Status",
-        "direction": "minimize",
-        "cv_folds": 1,
-        "output_hint": "predict the probability of each of the three Status values (Status_C, Status_CL, and Status_D)",
-        "files": {
-            "train": {"type": "data", "required": true, "extensions": [".csv"]}
-        },
-        "file_mapping": {
-            "train": {"filename": "train.csv", "type": "data", "required": true}
-        },
-        "split_strategy": "csv",
-        "load_strategy": "default",
-        "grader": "default"
-    },
-
     "playground-series-s5e6": {
         "metric": "mean_average_precision",
         "target_col": "Fertilizer Name",
@@ -189,31 +191,19 @@
         "grader": "default",
         "stratified_split": true
     },
-    "classify-leaves": {
-        "metric": "accuracy_score",
-        "target_col": "label",
+    "2024-datalab-cup1": {
+		"metric": "roc_auc_score",
+        "target_col": "Popularity",
         "direction": "maximize",
         "cv_folds": 1,
-        "output_hint": "predicted class labels (strings)",
-        "files": {
-            "train": {"type": "data", "required": true, "extensions": [".csv"]}
-        },
-        "file_mapping": {
-            "train": {"filename": "train.csv", "type": "data", "required": true}
-        },
-        "split_strategy": "classify_leaves",
-        "load_strategy": "classify_leaves",
-        "grader": "classify_leaves",
-        "stratified_split": true,
-        "input_shape": [28, 28, 1],
-        "num_classes": 62
-    },
-    "tabular-playground-series-jul-2021": {
-        "metric": "root_mean_squared_logarithmic_error_multitarget",
-        "target_col": ["target_carbon_monoxide", "target_benzene", "target_nitrogen_oxides"],
+        "split_strategy": "csv"
+	},
+    "ece460j-fall24": {
+        "metric": "log_loss",
+        "target_col": "Status",
         "direction": "minimize",
         "cv_folds": 1,
-        "output_hint": "predict the values of air pollution measurements over time",
+        "output_hint": "predict the probability of each of the three Status values (Status_C, Status_CL, and Status_D)",
         "files": {
             "train": {"type": "data", "required": true, "extensions": [".csv"]}
         },
@@ -222,6 +212,29 @@
         },
         "split_strategy": "csv",
         "load_strategy": "default",
-        "grader": "multitarget"
+        "grader": "default"
+    },
+    "thapar-summer-school-2025-hack-iii": {
+        "metric": "r2_score",
+        "target_col": "output",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "rutgers-data101-fall2022-assignment-12": {
+        "metric": "root_mean_squared_error",
+        "target_col": "tripduration",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "output_hint": "predicted values for 'tripduration' (floats)",
+        "split_strategy": "csv"
     }
 }

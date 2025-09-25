@@ -6,7 +6,6 @@ Script to recursively find submission.py files, add path comments, and copy to o
 import os
 import ast
 import argparse
-import shutil
 from pathlib import Path
 
 

@@ -1,6 +1,4 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union, TypedDict, Annotated
-import numpy as np
+from typing import Any, Dict, List, TypedDict, Annotated
 import pandas as pd
 
 from python.competition import *
@@ -19,7 +17,7 @@ class MultiLabelDataLoader(DataLoader):
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load training data and parse multi-label strings into actual lists."""
         dataset = {}
-        train_path = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}", f"train.csv")
+        train_path = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}", "train.csv")
 
         if os.path.exists(train_path):
             data = pd.read_csv(train_path)
@@ -38,7 +36,7 @@ class MultiLabelDataLoader(DataLoader):
     def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load validation features - no parsing needed for features."""
         dataset = {}
-        val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"X_val.csv")
+        val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", "X_val.csv")
 
         if os.path.exists(val_path):
             dataset = pd.read_csv(val_path)
@@ -49,7 +47,7 @@ class MultiLabelDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> List[List[str]]:
         """Load validation labels and parse multi-label strings."""
-        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
+        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", "y_val.csv")
 
         if os.path.exists(y_val_path):
             y_val_df = pd.read_csv(y_val_path)

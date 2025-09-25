@@ -1,16 +1,12 @@
 import os
 import sys
-from enum import Enum, StrEnum
-import weakref
+from enum import StrEnum
 import traceback
 import json
-import subprocess
 from pathlib import Path
 import shutil
-import docker
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union
+from typing import Any, Optional
 
-import numpy as np
 import pandas as pd
 import importlib
 from docker import DockerClient
@@ -226,7 +222,7 @@ class BenchPipeline:
         # Check if the network exists
         try:
             client.networks.create(network_name, driver="bridge", internal=True)
-        except Exception as e:
+        except Exception:
             logger.info("Network already exists, no error")
         container = client.containers.run(
             image=image_name,

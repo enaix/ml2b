@@ -27,7 +27,7 @@ class ClassifyLeavesDataLoader(DataLoader):
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load Classify Leaves training data from .csv file."""
         dataset = {}
-        train_path = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}", f"train.csv")
+        train_path = os.path.join(base_path, "folds", comp.comp_id, f"fold_{fold_idx}", "train.csv")
 
         if os.path.exists(train_path):
             # Load the .csv file
@@ -42,7 +42,7 @@ class ClassifyLeavesDataLoader(DataLoader):
     def load_validation_features(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
         """Load Classify Leaves validation features."""
         dataset = {}
-        val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"X_val.csv")
+        val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", "X_val.csv")
 
         if os.path.exists(val_path):
             data = pd.read_csv(val_path)
@@ -54,7 +54,7 @@ class ClassifyLeavesDataLoader(DataLoader):
 
     def load_validation_labels(self, comp: Competition, fold_idx: int, base_path: str) -> np.ndarray:
         """Load Classify Leaves validation labels."""
-        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", f"y_val.csv")
+        y_val_path = os.path.join(base_path, "validation", comp.comp_id, f"fold_{fold_idx}", "y_val.csv")
 
         if os.path.exists(y_val_path):
             data = pd.read_csv(y_val_path)

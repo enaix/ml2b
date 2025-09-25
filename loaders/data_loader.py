@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union, get_type_hints, get_args
+from typing import Any, Dict, get_type_hints, get_args
 #from python.competition import Competition
 from python.competition import *
 import pandas as pd

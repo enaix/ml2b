@@ -1,5 +1,5 @@
 from pathlib import Path
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel
 from typing import Literal, Any, Mapping
 BASE_TEMPLATE_PATH = Path(__file__).parent.resolve() / "bench_templates"

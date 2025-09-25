@@ -5,7 +5,6 @@
 **CRITICAL CONSTRAINTS:**
 - **NO GLOBAL VARIABLES**: Do not define any variables outside of function/class scope. All data must be contained within functions or class methods.
 - **IMPORT RESTRICTION**: During evaluation, only the functions will be imported and called. Any code outside function/class definitions (except imports and class definitions) will be IGNORED and may cause errors.
-- **EXECUTION CONTEXT**: The evaluation system will import your functions and call them directly. Code in `if __name__ == "__main__":` blocks will NOT be executed during evaluation.
 - **SELF-CONTAINED**: All necessary initialization code must be placed inside the functions that need it. Do not rely on global state.
 
 ```python

@@ -1,67 +1,53 @@
-Infrastructure code for the machine learning LLM benchmark
+# ML2B
 
-## Requirements
+This repository provides the implementation accompanying the paper *“MULTI-LINGUAL ML BENCHMARK FOR AUTOML”*.  
+It includes the code for dataset construction, the evaluation framework, and the agents assessed within this benchmark.
 
-- kaggle cli
+## Usage
 
-- Docker with Compose plugin
+### Requirements
 
-## Python
+We use [`uv`](https://github.com/astral-sh/uv) for environment management.  
+Install `uv` once, then run `uv sync` (or `uv pip install -r requirements.txt`) inside the project to create the virtual environment.
 
-You may run `test_submission.sh` to automatically download and run the dataset. Note: this script will REMOVE `./python/submission/` directory
+### Prepare Environment
 
-### Setup
+1. Install dependencies:
+   ```bash
+   uv sync
+   ```
+2. Activate the virtual environment:
+   ```bash
+   source .venv/bin/activate
+   ```
+3. Build the agent runtime:
+   ```bash
+   python run.py build-runtime -i aide --agent-dir agents/aide
+   ```
+   *(If you use another agent, keep the same file structure and command. See `python run.py build-runtime --help` for details.)*
+4. Prepare the dataset:
+   ```bash
+   python run.py prepare-dataset
+   ```
+   *(If you encounter an error with `gdown`, manually download the data from [Google Drive](https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf).)*
 
-Clear the submission folder after each run
+After these steps, you should see the following structure:
 
-Make sure that submission folder is a Python module:
-
-`echo "" > python/submission/__init__.py`
-
-Put the respecting dataset to the `competitions/${COMPETITION_ID}` directory and the submission file to `python/submission/code.py`. You may download the dataset using kaggle cli
-
-
-### Executing
-
-`export COMPETITION_ID=abc`
-
-`export BENCH_LANG=English`
-
-Execute the benchmark and put results to `python/submission/results.txt`:
-
-`docker compose run bench_python    # to enable non-blocking mode add -d`
-
-## Run
-1) install uv manager and run uv sync
-2) add lang tasts to competitions/tasks/
-3) add data for tasks to competitions/data/
-4) build agent runtime like
-*) load data
-```bash
-gdown --folder https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf
+```
+.
+├── run.py
+└── competitions/
+    ├── data/
+    ├── competitions.json
+    └── tasks/
 ```
 
-```bash
-#for more information see: python run.py  build-runtime --help
-python run.py  build-runtime -i aide --agent-dir agents/aide
-```
-5) build evaluation container
-```bash
-docker compose build bench_python
-```
-6) run benchmark
-```python
-#for more information see: python run.py bench --help
-python run.py bench -i aide -w 6 --agent-dir agents/aide --network ollama
-```
-## TODO
+### Running the Benchmark
 
-- [ ] Рефактор
-- [ ] Сделать сплиты для соревнований с несколькими файлами
-- [ ] Добавить удобную загрузку данных через стартовый скрипт
-- [ ] Добавить чекпоинты
-- [ ] Улучшить логирование
-- [ ] Добавить проверку не только кода но и submission.csv
-- [ ] Занести образ для проверки в environments
-- [ ] Поддержка R, Julia
-- [ ] Подумать как сделать удобную замену путей в контейнере (а что, а вдруг понадобится)
+1. Configure agent parameters in the corresponding directory (e.g. `agents/aide/config.yaml`).  
+   Make sure environment variables such as `$OPENAI_API_KEY` are exported in your shell.
+
+2. Run the benchmark (see `python run.py bench --help` for more options):
+   ```bash
+   python run.py bench -i aide -w 4 --agent-dir agents/aide --seed 42 --args-variant extended --code-variant extended
+   ```

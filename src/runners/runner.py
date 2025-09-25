@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Callable
 import asyncio
 import traceback
-from typing import Any, Iterable, Literal
+from typing import Iterable, Literal
 import uuid
 from loguru import logger
 from docker.models.containers import Container
@@ -231,13 +231,10 @@ class DockerRunner:
 
             with tarfile.open(tmp_tar_path, "r") as tar:
                 for member in tar.getmembers():
-                    # Если это симлинк или хардлинк — разыменовываем
                     if member.issym() or member.islnk():
-                        # Симлинк указывает на member.linkname
                         try:
                             target = tar.extractfile(member.linkname)
                         except KeyError:
-                            # Если цель вне архива — пропускаем
                             continue
                         if target:
                             out_path = log_dir / member.name
@@ -345,7 +342,7 @@ class DockerRunner:
                     )
                 for cb in task.success_callbacks:
                     cb({})
-            except Exception as e:
+            except Exception:
                 for cb in task.failure_callbacks:
                     cb({})
                 trace = traceback.format_exc()

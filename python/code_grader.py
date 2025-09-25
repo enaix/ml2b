@@ -1,12 +1,7 @@
 import numpy as np
-import pandas as pd
 import json
-import sys
 import os
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Callable
 import traceback
-import shutil
 
 # Import from our architecture
 from loaders import DATA_LOADERS
@@ -128,7 +123,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
                 scores.append(score)
                 print(f"grade_llm_code() : finished fold {fold_idx+1}/{folds}")
 
-            except Exception as e:
+            except Exception:
                 common.report_error(f"Error during fold {fold_idx} execution: {traceback.format_exc()}")
                 common.graceful_exit(1)
 

@@ -8,7 +8,7 @@ def setup_logger(
     log_level: str = "INFO",
     log_folder: Optional[Union[Path, str]] = None,
     file_log_level: Optional[str] = None,
-    recreate_folder: bool = True  # Новый параметр для контроля пересоздания
+    recreate_folder: bool = True
 ) -> None:
     """
     Setup logger for benchmark with Rich console output and file logging.
@@ -33,15 +33,12 @@ def setup_logger(
         level=log_level,
     )
     
-    # File logging (if folder specified)
     if log_folder:
         log_folder = Path(log_folder).resolve()
         
-        # Удаляем папку если она существует и нужно пересоздать
         if recreate_folder and log_folder.exists():
             shutil.rmtree(log_folder)
-        
-        # Создаем папку (будет создана даже если recreate_folder=False)
+
         log_folder.mkdir(parents=True, exist_ok=True)
         
         file_level = file_log_level or log_level
