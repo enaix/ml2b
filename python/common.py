@@ -4,6 +4,7 @@
 import os
 import sys
 import json
+import traceback
 
 
 class Results:
@@ -11,11 +12,11 @@ class Results:
     Global class which stores and saves results to file.
     """
 
-    res = {"errors": [], "success": False}
+    res = {"errors": [], "tracebacks": [], "success": False}
     is_in_container = False
 
     def write(self):
-        with open("submission/results.json", "w") as f:
+        with open(os.path.join("submission", "results.json"), "w") as f:
             json.dump(self.res, f)
 
 
@@ -25,6 +26,7 @@ bench_results = Results()
 def report_error(err: str):
     print(err)  # log to stdout
     bench_results.res["errors"].append(err)  # set result flag to the output file
+    bench_results.res["tracebacks"].append(str(traceback.format_exc()))
 
 
 def graceful_exit(status: int):

@@ -1,6 +1,15 @@
 FROM python:3.12-slim
 
-WORKDIR /bench
+WORKDIR /home/bench
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    build-essential \
+    git && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -U -s /bin/bash bench
 
 COPY requirements.txt ./
 
@@ -8,9 +17,10 @@ RUN umask 012 # files must not be writeable to the submission script
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY *.py .
+COPY *.py python
+COPY ../loaders loaders
 
-RUN useradd -M -U -s /bin/bash bench
+ENV PYTHONPATH="/home/bench"
 
 # Avoid potential data leak
 # RUN usermod -a -G bench root
@@ -22,4 +32,4 @@ RUN useradd -M -U -s /bin/bash bench
 #RUN chown bench:bench submission # submission code can read/write to this dir
 #RUN touch submission/__init__.py # should be readonly
 
-CMD [ "python", "./bench.py" ]
+CMD [ "python", "python/bench.py" ]

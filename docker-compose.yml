@@ -4,8 +4,7 @@ services:
     restart: always
     container_name: bench_python
     volumes:
-      - ./python/submission:/bench/submission
-      - ./competitions:/bench/data:ro
+      - ./competitions:/home/bench/competitions:ro
     user: "bench:bench"
     networks:
       - python_no_inet

@@ -1,0 +1,44 @@
+You are participating in Multi-Lingual ML Benchmark, a multilingual benchmark designed to evaluate the ability of agents to handle machine learning tasks across both programming and natural languages.
+You will be given a machine learning task description and corresponded data path.
+Your task is to train a model and generate predictions or solutions in one of the programming language: Python, R, Julia according to the competition instructions.
+You may not manually annotate the data or hardcode outputs for specific language.
+
+
+BENCHMARK INSTRUCTIONS
+------
+- **First, please read the instructions below which are specific to our multilingual benchmark setup.**
+- **Submission:** Regardless of the task language, and submission-specific instructions you MUST produce a submission at 'submission/' directory
+- **Test set:** As we do not have access to the original test labels for some competitions, we have constructed our own train/test split. The dataset provided may differ slightly from what is described in the competition instructions.
+- **Strict programming language requirement:** The programming language specified for the task is mandatory. You must implement your solution strictly in the given language. Solutions written in any other language will not be evaluated.
+- **Cheating:** Viewing or copying others multilingual solutions is not allowed. Plagiarized submissions will be disqualified.
+
+Your submission will be graded based on the metric specified in the competition specific instructions. Your goal is to achieve the best score.
+Wherever there is a conflict between the points above and the competition-specific instructions above, the above points should always take priority since these are always true for our offline multilingual benchmark setup.
+
+
+COMPETITION-SPECIFIC INSTRUCTIONS
+------
+- **ML task description:** {{ task_info.description }}
+- **Task domain** {{ task_info.domain }}
+- **Target metric:** {{ task_info.metric }}
+- **Target solution language** {{ code_lang }}
+- **Data description** {{ task_info.datacard }}
+
+
+SUBMISSION-SPECIFIC INSTRUCTIONS
+------
+{% if competition_type_file and not competition_type_code %}
+Regardless of the task instructions, you MUST produce a 'submission.csv' file at 'submission/'.
+We will only evaluate submission found at this path; failure to submit a `submission.csv` at this path will result in a failed attempt.
+{% elif competition_type_file and competition_type_code %}
+In addition to the required code implementation in a file 'submission{{ code_extention }}' at 'submission/', you MUST also produce a submission file named 'submission.csv' at 'submission/'.
+We will only evaluate submissions found at this path; both the code and the file are required for successful evaluation.
+{% elif competition_type_code and not competition_type_file %}
+Your submission consists of the implemented code only. Ensure that all required functions are present in 'submission{{ code_extention }}' with the correct signatures at 'submission/'.
+We will only evaluate submission found at this path.
+{% endif %}
+{% if competition_type_code %}
+{% include "template_parts/code_template" + "_" + code_lang  + "_" + code_template_variant + ".j2" %}
+{% endif %}
+
+

@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     build-essential \
+    git \
     curl \
     wget && \
     rm -rf /var/lib/apt/lists/*
@@ -24,11 +25,11 @@ RUN apt-get update && apt-get install -y \
 RUN wget -O /tmp/Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh" \
     && bash /tmp/Miniforge3.sh -b -p "/opt/conda" \
     && rm /tmp/Miniforge3.sh
-    
+
 ENV PATH="/opt/conda/bin:$PATH"
 
 ARG CONDA_ENV_NAME=agent
-ARG PYTHON_VERSION=3.13
+ARG PYTHON_VERSION=3.12
 ARG REQUIREMENTS=/tmp/requirements.txt
 
 COPY /environments/runtime/requirements.txt ${REQUIREMENTS}
@@ -49,6 +50,20 @@ RUN apt-get update && apt-get install -y r-base && rm -rf /var/lib/apt/lists/*
 #R deps example
 RUN R -e "install.packages(c('methods','jsonlite','tseries'), dependencies=TRUE)"
 
+ARG AGENT_DIR=/home/agent
+ENV AGENT_DIR=${AGENT_DIR}
+ENV CONDA_ENV_NAME=${CONDA_ENV_NAME}
+
+RUN useradd nonroot \
+    && mkdir -p /home/logs /home/submission /home/artifacts /home/data ${AGENT_DIR} \
+    && chown -R nonroot:nonroot /home/logs /home/submission /home/artifacts /home/data ${AGENT_DIR}
+
+#add bench user
+RUN useradd -m -U -s /bin/bash bench
+WORKDIR /home/bench
+COPY --chown=bench:bench python ./python
+COPY --chown=bench:bench loaders ./loaders
+
 WORKDIR /home
 
-RUN useradd -m nonroot
+ENTRYPOINT ["tail", "-f", "/dev/null"]

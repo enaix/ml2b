@@ -1,0 +1,25 @@
+- You MUST implement the following Python functions with the exact signatures. Changing their names, arguments, or return types will result in disqualification.
+- You may define additional functions, classes, or modules as needed to implement your solution, as long as the required functions above are present with the correct signatures.
+- Your submission must be contained in a **single Python file**. All code, including any helper functions or classes, should reside in this file. The evaluation will only consider this file as the final solution.
+
+**CRITICAL CONSTRAINTS:**
+- **NO GLOBAL VARIABLES**: Do not define any variables outside of function/class scope. All data must be contained within functions or class methods.
+- **IMPORT RESTRICTION**: During evaluation, only the functions will be imported and called. Any code outside function/class definitions (except imports and class definitions) will be IGNORED and may cause errors.
+- **SELF-CONTAINED**: All necessary initialization code must be placed inside the functions that need it. Do not rely on global state.
+
+```python
+import pandas as pd
+import numpy as np
+from typing import TypedDict
+
+{% for class_code in type_defs.values() %}
+{{ class_code }}
+{% endfor %}
+def train_and_predict({% for key, value in full_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> np.ndarray:
+    """
+    This function takes the training data, validation features and returns the predictions for validation features
+
+    {{ full_doc | indent(4) }}
+    """
+    ...
+```

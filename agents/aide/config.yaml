@@ -1,0 +1,23 @@
+default_kwargs: &default_kwargs
+  data_dir: /home/data/
+  desc_file: /home/instructions.txt
+  agent.steps: 500
+  agent.search.max_debug_depth: 20
+  copy_data: True
+  agent.search.debug_prob: 1
+  agent.expose_prediction: True
+  exec.timeout: 3600
+  exp_name: bench
+
+kwargs_type: omegaconf
+start: aide/start.sh
+kwargs:
+  <<: *default_kwargs
+  agent.code.model: gpt-4.1-mini
+  agent.feedback.model: gpt-4.1-mini
+  report.model: gpt-4.1-mini
+env_vars:
+  TIME_LIMIT_SECS: 10800 #time in seconds
+  # http_proxy: *
+  # https_proxy: *
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

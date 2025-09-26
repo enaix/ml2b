@@ -1,0 +1,58 @@
+- You MUST implement the following Python functions with the exact signatures. Changing their names, arguments, or return types will result in disqualification.
+- You may define additional functions, classes, or modules as needed to implement your solution, as long as the required functions above are present with the correct signatures.
+- Your submission must be contained in a **single Python file**. All code, including any helper functions or classes, should reside in this file. The evaluation will only consider this file as the final solution.
+- The `run()` function is PROVIDED AS-IS and MUST NOT be modified in any way.
+
+**CRITICAL CONSTRAINTS:**
+- **NO GLOBAL VARIABLES**: Do not define any variables outside of function/class scope. All data must be contained within functions or class methods.
+- **IMPORT RESTRICTION**: During evaluation, only the functions will be imported and called. Any code outside function/class definitions (except imports and class definitions) will be IGNORED and may cause errors.
+- **SELF-CONTAINED**: All necessary initialization code must be placed inside the functions that need it. Do not rely on global state.
+
+
+```python
+import pandas as pd
+import numpy as np
+from typing import Any, TypedDict
+
+{% for class_code in type_defs.values() %}
+{{ class_code }}
+{% endfor %}
+def train({% for key, value in train_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> Any:
+    """
+    This function takes training data and returns the trained model and any intermediate variables
+
+    {{ train_doc | indent(4) }}
+    """
+    ...
+
+
+def prepare_val(train_output: Any, {% for key, value in val_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{%- endfor %}) -> Any:
+    """
+    This function takes train function output and processed validation features
+
+    {{ val_doc | indent(4) }}
+        train_output (Any): Output from the train function
+    """
+    ...
+
+
+def predict(train_output: Any, prepare_val_output: Any) -> np.ndarray:
+    """
+    This function takes train and prepare_val functions outputs and generates the prediction for validation features
+
+    Args:
+        train_output (Any): Output from the train function
+        prepare_val_output (Any): Output from the prepare_val function, which is the processed X_val dataframe
+    """
+    ...
+
+
+def run({% for key, value in full_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> np.ndarray:
+    """
+    This function takes the training data, validation features and returns the predictions for validation features
+
+    {{ full_doc | indent(4) }}
+    """
+    train_output = train({% for key in train_spec.keys() %}{{ key }}{% if not loop.last %}, {% endif %}{% endfor %})
+    return predict(train_output, prepare_val(train_output, {% for key in val_spec.keys() %}{{ key }}{% if not loop.last %}, {% endif %}{% endfor %}))
+```
