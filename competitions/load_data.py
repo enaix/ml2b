@@ -1,8 +1,10 @@
 import os
+import sys
 import requests
 import gdown
 from pathlib import Path
 import pandas as pd
+import shutil
 
 competition_map = {
     "widsdatathon2020": "wids-datathon-2020",
@@ -38,6 +40,11 @@ competition_map = {
 DATA_URL = "https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf"
 METADATA_URL = "https://docs.google.com/spreadsheets/d/1ZY8NRI-WZ4RoDK8GpEy_GTSSWVZPxQQthTaySp5jnao/export?format=csv&gid="
 
+HF_DATASET = "TODO_FILL_IN_DATASET_NAME"
+HF_TASKS_DIR = "tasks"
+HF_DATA_DIR = "data"
+
+
 sheets = {
     "1525338984": "Arab.csv",
     "1607321930": "Belarus.csv",
@@ -71,15 +78,15 @@ def add_competition_id_to_all(directory_path: Path | str, competition_map: dict[
             df['comp-id'] = df['competition'].map(competition_map)
             
             df.to_csv(csv_file, index=False, encoding='utf-8')
-            print(f"✅ Added comp-id to {csv_file.name}")
+            print(f"[OK] Added comp-id to {csv_file.name}")
             
         except Exception as e:
-            print(f"❌ Error with {csv_file.name}: {e}")
+            print(f"[ERROR] Error with {csv_file.name}: {e}")
 
 
-def load_data() -> None:
+def load_data_gdrive() -> None:
     """
-    Loads tasks data and metadata, prepare for running benchmark
+    Loads tasks data and metadata from GDrive, prepare for running benchmark
     """
     DEST = Path("competitions/tasks").resolve()
     DEST.mkdir(exist_ok=True)
@@ -95,11 +102,60 @@ def load_data() -> None:
                 f.write(response.content)
             print(f"Downloaded: {filename}")
         except requests.RequestException as e:
-            print(f"❌ Failed to download {filename}: {e}")
+            print(f"[ERROR] Failed to download {filename}: {e}")
     add_competition_id_to_all(DEST, competition_map)
     print(20 * "=" + "Load competitions data" + 20 * "=")
     gdown.download_folder(DATA_URL, output=str(DEST.parent / "data"), quiet=False, use_cookies=False)
-    print("✅ Benchmark data successfuly prepared")
+    print("[OK] Benchmark data successfuly prepared")
+
+
+def load_data_huggingface() -> None:
+    """
+    Loads tasks data and metadata from huggingface hub
+    """
+    import datasets
+
+    TASKS = Path("competitions/tasks").resolve()
+    TASKS.mkdir(exist_ok=True)
+
+    DATA = Path("competitions/data").resolve()
+    DATA.mkdir(exist_ok=True)
+
+    print("Downloading task descriptions...")
+    tasks = datasets.load_dataset(HF_DATASET, data_dir=HF_TASKS_DIR)
+
+    print("Downloading data...")
+    data = datasets.load_dataset(HF_DATASET, data_dir=HF_DATA_DIR)
+
+    print("Moving task descriptions and data...")
+    shutil.move(tasks, TASKS)
+    shutil.move(data, DATA)
+
+    add_competition_id_to_all(TASKS, competition_map)
+    print("[OK] Benchmark data successfuly prepared")
+
+
+def print_help():
+    print("Usage: load_data.py SOURCE")
+    print("  SOURCE: [huggingface gdrive]")
+    sys.exit(1)
+
+
+def load_data(source: str):
+    """
+    Load the benchmark data from the source ("gdrive"/"huggingface")
+    """
+    if source == "gdrive":
+        load_data_gdrive()
+    elif source == "huggingface":
+        load_data_huggingface()
+    else:
+        print("Bad data source:", source)
+        print_help()
+
 
 if __name__ == "__main__":
-    load_data()
+    if len(sys.argv) != 2:
+        print_help()
+
+    load_data(sys.argv[1])

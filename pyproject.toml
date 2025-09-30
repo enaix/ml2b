@@ -20,4 +20,5 @@ dependencies = [
     "rich==14.1.0",
     "scikit-learn==1.7.1",
     "typer==0.16.1",
+    "datasets==4.1.1",
 ]
