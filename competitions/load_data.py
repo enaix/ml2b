@@ -1,8 +1,10 @@
 import os
+import sys
 import requests
 import gdown
 from pathlib import Path
 import pandas as pd
+import shutil
 
 competition_map = {
     "widsdatathon2020": "wids-datathon-2020",
@@ -38,6 +40,11 @@ competition_map = {
 DATA_URL = "https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf"
 METADATA_URL = "https://docs.google.com/spreadsheets/d/1ZY8NRI-WZ4RoDK8GpEy_GTSSWVZPxQQthTaySp5jnao/export?format=csv&gid="
 
+HF_DATASET = "enaix/ml2b"
+HF_TASKS_DIR = "tasks"
+HF_DATA_DIR = "data"
+
+
 sheets = {
     "1525338984": "Arab.csv",
     "1607321930": "Belarus.csv",
@@ -71,15 +78,15 @@ def add_competition_id_to_all(directory_path: Path | str, competition_map: dict[
             df['comp-id'] = df['competition'].map(competition_map)
             
             df.to_csv(csv_file, index=False, encoding='utf-8')
-            print(f"✅ Added comp-id to {csv_file.name}")
+            print(f"[OK] Added comp-id to {csv_file.name}")
             
         except Exception as e:
-            print(f"❌ Error with {csv_file.name}: {e}")
+            print(f"[ERROR] Error with {csv_file.name}: {e}")
 
 
-def load_data() -> None:
+def load_data_gdrive() -> None:
     """
-    Loads tasks data and metadata, prepare for running benchmark
+    Loads tasks data and metadata from GDrive, prepare for running benchmark
     """
     DEST = Path("competitions/tasks").resolve()
     DEST.mkdir(exist_ok=True)
@@ -95,11 +102,96 @@ def load_data() -> None:
                 f.write(response.content)
             print(f"Downloaded: {filename}")
         except requests.RequestException as e:
-            print(f"❌ Failed to download {filename}: {e}")
+            print(f"[ERROR] Failed to download {filename}: {e}")
     add_competition_id_to_all(DEST, competition_map)
     print(20 * "=" + "Load competitions data" + 20 * "=")
     gdown.download_folder(DATA_URL, output=str(DEST.parent / "data"), quiet=False, use_cookies=False)
-    print("✅ Benchmark data successfuly prepared")
+    print("[OK] Benchmark data successfuly prepared")
+
+
+def prompt_data_removal(path) -> None:
+    yn = input(f"Folder {path} already exists. Remove? [y/N]: ")
+    if yn.lower() not in ["y", "yes"]:
+        print("Bailing out")
+        sys.exit(0)
+
+
+def load_data_huggingface(rm_cache: bool) -> None:
+    """
+    Loads tasks data and metadata from huggingface hub
+    """
+    #import datasets
+    from huggingface_hub import snapshot_download
+
+    TASKS = Path("competitions/tasks").resolve()
+    if TASKS.exists():
+        prompt_data_removal(TASKS)
+        shutil.rmtree(TASKS)
+    #TASKS.mkdir(exist_ok=True)
+
+    DATA = Path("competitions/data").resolve()
+    if DATA.exists():
+        prompt_data_removal(DATA)
+        shutil.rmtree(DATA)
+
+    #DATA.mkdir(exist_ok=True)
+
+    print("Downloading the dataset...")
+    #tasks = datasets.load_dataset(HF_DATASET, data_dir=HF_TASKS_DIR)
+    dataset = snapshot_download(repo_id=HF_DATASET, repo_type="dataset")
+
+    #data = datasets.load_dataset(HF_DATASET, data_dir=HF_DATA_DIR)
+    #data = snapshot_download(repo_id=HF_DATASET, subfolder=HF_DATA_DIR)
+
+    tasks = (dataset / Path(HF_TASKS_DIR))
+    data = (dataset / Path(HF_DATA_DIR))
+
+    print("[OK] Path to the dataset cache:", dataset)
+    if rm_cache:
+        print("Moving task descriptions and data to the current folder...")
+        shutil.move(tasks, TASKS)
+        shutil.move(data, DATA)
+    else:
+        print("Copying task descriptions and data to the current folder...")
+        shutil.copytree(tasks, TASKS)
+        shutil.copytree(data, DATA)
+
+    add_competition_id_to_all(TASKS, competition_map)
+    print("[OK] Benchmark data successfuly prepared")
+
+
+def print_help():
+    print("Usage: load_data.py SOURCE REMOVE_CACHE")
+    print("  SOURCE: [huggingface gdrive]")
+    print("  REMOVE_CACHE: [remove_cache leave_cache]: to remove or leave huggingface cache to save space")
+    sys.exit(1)
+
+
+def load_data(source: str, rm_cache: bool):
+    """
+    Load the benchmark data from the source ("gdrive"/"huggingface")
+    """
+
+    if source == "gdrive":
+        load_data_gdrive()
+    elif source == "huggingface":
+        load_data_huggingface(rm_cache)
+    else:
+        print("Bad data source:", source)
+        print_help()
+
 
 if __name__ == "__main__":
-    load_data()
+    if len(sys.argv) != 3:
+        print_help()
+
+    remove_cache = sys.argv[2]
+    if remove_cache == "remove_cache":
+        rm_cache = True
+    elif remove_cache == "leave_cache":
+        rm_cache = False
+    else:
+        print("Bad cache option:", remove_cache)
+        print_help()
+
+    load_data(sys.argv[1], rm_cache)

@@ -25,11 +25,15 @@ Install `uv` once, then run `uv sync` (or `uv pip install -r requirements.txt`) 
    python run.py build-runtime -i aide --agent-dir agents/aide
    ```
    *(If you use another agent, keep the same file structure and command. See `python run.py build-runtime --help` for details.)*
-4. Prepare the dataset:
+4. Download and prepare the dataset:
    ```bash
-   python run.py prepare-dataset
+   python run.py prepare-data huggingface    # preferred way, you may delete the cache by passing the --remove-cache option
+   # OR
+   python run.py prepare-data gdrive
    ```
-   *(If you encounter an error with `gdown`, manually download the data from [Google Drive](https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf).)*
+   *(The dataset can also be downloaded manually from the [hugginface hub](https://huggingface.co/datasets/enaix/ml2b) and placing the `data`,`tasks` directories into `competitions`)*
+   
+   *(If you wish to download from GDrive and encounter an error with `gdown`, manually download the data from [Google Drive](https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf). You would also need to download task descriptions manually)*
 
 After these steps, you should see the following structure:
 
