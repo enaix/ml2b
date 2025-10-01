@@ -174,8 +174,9 @@ def bench(image_name: str, workers: int, data_dir: Path,
 
 
 @cli.command()
+@click.option("--remove-cache", is_flag=True, help="Remove huggingface hub cache to save space")
 @click.argument('source')
-def prepare_data(source: str):
+def prepare_data(remove_cache: bool, source: str):
     """
     Prepare data for benchmark run
     """
@@ -184,7 +185,7 @@ def prepare_data(source: str):
         print("Source must be one of:", str(source_options))
         sys.exit(1)
 
-    load_data(source)
+    load_data(source, remove_cache)
 
 
 if __name__ == "__main__":

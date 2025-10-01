@@ -40,7 +40,7 @@ competition_map = {
 DATA_URL = "https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf"
 METADATA_URL = "https://docs.google.com/spreadsheets/d/1ZY8NRI-WZ4RoDK8GpEy_GTSSWVZPxQQthTaySp5jnao/export?format=csv&gid="
 
-HF_DATASET = "TODO_FILL_IN_DATASET_NAME"
+HF_DATASET = "enaix/ml2b"
 HF_TASKS_DIR = "tasks"
 HF_DATA_DIR = "data"
 
@@ -109,53 +109,89 @@ def load_data_gdrive() -> None:
     print("[OK] Benchmark data successfuly prepared")
 
 
-def load_data_huggingface() -> None:
+def prompt_data_removal(path) -> None:
+    yn = input(f"Folder {path} already exists. Remove? [y/N]: ")
+    if yn.lower() not in ["y", "yes"]:
+        print("Bailing out")
+        sys.exit(0)
+
+
+def load_data_huggingface(rm_cache: bool) -> None:
     """
     Loads tasks data and metadata from huggingface hub
     """
-    import datasets
+    #import datasets
+    from huggingface_hub import snapshot_download
 
     TASKS = Path("competitions/tasks").resolve()
-    TASKS.mkdir(exist_ok=True)
+    if TASKS.exists():
+        prompt_data_removal(TASKS)
+        shutil.rmtree(TASKS)
+    #TASKS.mkdir(exist_ok=True)
 
     DATA = Path("competitions/data").resolve()
-    DATA.mkdir(exist_ok=True)
+    if DATA.exists():
+        prompt_data_removal(DATA)
+        shutil.rmtree(DATA)
 
-    print("Downloading task descriptions...")
-    tasks = datasets.load_dataset(HF_DATASET, data_dir=HF_TASKS_DIR)
+    #DATA.mkdir(exist_ok=True)
 
-    print("Downloading data...")
-    data = datasets.load_dataset(HF_DATASET, data_dir=HF_DATA_DIR)
+    print("Downloading the dataset...")
+    #tasks = datasets.load_dataset(HF_DATASET, data_dir=HF_TASKS_DIR)
+    dataset = snapshot_download(repo_id=HF_DATASET, repo_type="dataset")
 
-    print("Moving task descriptions and data...")
-    shutil.move(tasks, TASKS)
-    shutil.move(data, DATA)
+    #data = datasets.load_dataset(HF_DATASET, data_dir=HF_DATA_DIR)
+    #data = snapshot_download(repo_id=HF_DATASET, subfolder=HF_DATA_DIR)
+
+    tasks = (dataset / Path(HF_TASKS_DIR))
+    data = (dataset / Path(HF_DATA_DIR))
+
+    print("[OK] Path to the dataset cache:", dataset)
+    if rm_cache:
+        print("Moving task descriptions and data to the current folder...")
+        shutil.move(tasks, TASKS)
+        shutil.move(data, DATA)
+    else:
+        print("Copying task descriptions and data to the current folder...")
+        shutil.copytree(tasks, TASKS)
+        shutil.copytree(data, DATA)
 
     add_competition_id_to_all(TASKS, competition_map)
     print("[OK] Benchmark data successfuly prepared")
 
 
 def print_help():
-    print("Usage: load_data.py SOURCE")
+    print("Usage: load_data.py SOURCE REMOVE_CACHE")
     print("  SOURCE: [huggingface gdrive]")
+    print("  REMOVE_CACHE: [remove_cache leave_cache]: to remove or leave huggingface cache to save space")
     sys.exit(1)
 
 
-def load_data(source: str):
+def load_data(source: str, rm_cache: bool):
     """
     Load the benchmark data from the source ("gdrive"/"huggingface")
     """
+
     if source == "gdrive":
         load_data_gdrive()
     elif source == "huggingface":
-        load_data_huggingface()
+        load_data_huggingface(rm_cache)
     else:
         print("Bad data source:", source)
         print_help()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         print_help()
 
-    load_data(sys.argv[1])
+    remove_cache = sys.argv[2]
+    if remove_cache == "remove_cache":
+        rm_cache = True
+    elif remove_cache == "leave_cache":
+        rm_cache = False
+    else:
+        print("Bad cache option:", remove_cache)
+        print_help()
+
+    load_data(sys.argv[1], rm_cache)
