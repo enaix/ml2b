@@ -236,5 +236,40 @@
         "cv_folds": 1,
         "output_hint": "predicted values for 'tripduration' (floats)",
         "split_strategy": "csv"
+    },
+    "classify-leaves": {
+        "metric": "accuracy_score",
+        "target_col": "label",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "predicted class labels (strings)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "classify_leaves",
+        "load_strategy": "classify_leaves",
+        "grader": "classify_leaves",
+        "stratified_split": true,
+        "input_shape": [28, 28, 1],
+        "num_classes": 62
+    },
+    "tabular-playground-series-jul-2021": {
+        "metric": "root_mean_squared_logarithmic_error_multitarget",
+        "target_col": ["target_carbon_monoxide", "target_benzene", "target_nitrogen_oxides"],
+        "direction": "minimize",
+        "cv_folds": 1,
+        "output_hint": "predict the values of air pollution measurements over time",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "multitarget"
     }
 }
