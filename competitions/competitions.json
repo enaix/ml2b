@@ -271,5 +271,50 @@
         "split_strategy": "csv",
         "load_strategy": "default",
         "grader": "multitarget"
+    },
+    "itmo-flat-price-prediction-2024": {
+        "metric": "root_mean_squared_error",
+        "target_col": "price",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "car-becho-paisa-paao": {
+        "metric": "root_mean_squared_error",
+        "target_col": "price",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "cs-506-fall-2025-technical-midterm": {
+        "metric": "f1_score_avg_macro",
+        "target_col": "Score",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
     }
 }
