@@ -323,5 +323,21 @@
         "direction": "maximize",
         "cv_folds": 3,
         "output_hint": "probabilities for class 1 (floats in [0, 1])"
-	}
+	},
+    "playground-series-s5e3": {
+        "metric": "roc_auc_score",
+        "target_col": "rainfall",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "predict a probability for the target rainfall",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+		"load_strategy": "default",
+        "grader": "default"
+    }
 }
