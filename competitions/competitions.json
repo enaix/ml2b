@@ -316,5 +316,12 @@
         "split_strategy": "csv",
         "load_strategy": "default",
         "grader": "default"
-    }
+    },
+	"2018-spring-cse6250-hw1": {
+        "metric": "roc_auc_score",
+        "target_col": "value",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+	}
 }
