@@ -332,5 +332,21 @@
         "split_strategy": "csv",
 		"load_strategy": "default",
         "grader": "default"
+    },
+    "ift-6390-ift-3395-beer-quality-prediction": {
+        "metric": "accuracy_score",
+        "target_col": "quality",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "predict a quality score (int in [1, 10])",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+		"load_strategy": "default",
+        "grader": "default"
     }
 }
