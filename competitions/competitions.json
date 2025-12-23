@@ -348,5 +348,22 @@
         "split_strategy": "csv",
 		"load_strategy": "default",
         "grader": "default"
-    }
+    },
+	"multi-label-classification-competition-2025": {
+	    "metric": "fbeta_score_micro",
+	    "beta": 1.0,
+	    "target_col": "Labels",
+	    "direction": "maximize",
+	    "cv_folds": 1,
+	    "output_hint": "predicted labels per image as whitespace-separated integers (e.g. \"8 3 13\")",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+	    "split_strategy": "photo_classification",
+	    "load_strategy": "photo_classification",
+	    "grader": "photo_classification"
+	}
 }
