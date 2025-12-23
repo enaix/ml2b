@@ -17,7 +17,8 @@ from sklearn.metrics import (
     balanced_accuracy_score,
     root_mean_squared_error,
     r2_score,
-    mean_squared_log_error
+    mean_squared_log_error,
+    fbeta_score
 )
 import python.common as common
 
@@ -655,6 +656,68 @@ def grader_classify_leaves(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
         common.report_error(f"Image classification grader execution failed : {sys.exc_info()}")
         return np.nan
 
+def grader_photo_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+    """
+    Grader for multi-label image classification using sklearn's
+    fbeta_score with micro averaging.
+    """
+    beta = comp.get("beta", 1.0)
+
+    try:
+        # Normalize predictions
+        if isinstance(pred, pd.DataFrame):
+            pred = pred.iloc[:, 0]
+        elif isinstance(pred, np.ndarray):
+            pred = pd.Series(pred)
+        elif isinstance(pred, list):
+            pred = pd.Series(pred)
+
+        # Normalize validation labels
+        if isinstance(val, pd.DataFrame):
+            val = val.iloc[:, -1]
+        elif isinstance(val, np.ndarray):
+            val = pd.Series(val)
+        elif isinstance(val, list):
+            val = pd.Series(val)
+
+        # Align lengths
+        min_len = min(len(pred), len(val))
+        pred = pred.iloc[:min_len]
+        val = val.iloc[:min_len]
+
+        def to_label_list(x):
+            if pd.isna(x) or x == "":
+                return []
+            if isinstance(x, (list, set)):
+                return list(map(int, x))
+            if isinstance(x, str):
+                return list(map(int, x.split()))
+            return []
+
+        y_pred = pred.apply(to_label_list).tolist()
+        y_true = val.apply(to_label_list).tolist()
+
+        # Fit binarizer on ground truth labels
+        mlb = MultiLabelBinarizer()
+        y_true_bin = mlb.fit_transform(y_true)
+
+        # Transform predictions using same label space
+        y_pred_bin = mlb.transform(y_pred)
+
+        return fbeta_score(
+            y_true_bin,
+            y_pred_bin,
+            beta=beta,
+            average="micro",
+            zero_division=0
+        )
+
+    except Exception:
+        common.report_error(
+            f"Photo classification grader execution failed : {sys.exc_info()}"
+        )
+        return np.nan
+
 
 # Updated GRADERS registry
 GRADERS = {
@@ -666,6 +729,7 @@ GRADERS = {
     "multilabel": grader_multilabel,
     "multitarget": grader_multitarget,
     "biker_recommender": grader_biker_recommender,
-    "classify_leaves": grader_classify_leaves
+    "classify_leaves": grader_classify_leaves,
+    "photo_classification": grader_photo_classification
 }
 
