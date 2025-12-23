@@ -772,6 +772,84 @@ class ClassifyLeavesDataSplitter(DataSplitter):
         """Extract label from image path (assumes parent directory is class name)"""
         return os.path.basename(os.path.dirname(img_path))
 
+class PhotoClassificationDataSplitter(DataSplitter):
+    """
+    Data splitter for multi-label image classification dataset
+    using fixed 80:20 split with seed 42.
+    """
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
+        super().__init__(log_error, do_shutdown, grading_stage)
+
+    def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """
+        Split Photo Classification data using fixed 80:20 split.
+        """
+        self.prepare_competition_files(comp)
+
+        train_file = comp.get_file("train")
+        if not train_file or not train_file.exists():
+            raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
+
+        df = pd.read_csv(train_file.path)
+
+        image_col = comp.metadata.get("image_col", "ImageID")
+        labels_col = comp.metadata.get("labels_col", "Labels")
+
+        if image_col not in df.columns or labels_col not in df.columns:
+            image_col, labels_col = df.columns[0], df.columns[1]
+
+        images = df[image_col].tolist()
+
+        train_images, val_images = train_test_split(
+            images,
+            test_size=0.2,
+            random_state=42,
+            shuffle=True
+        )
+
+        return [(train_images, val_images)]
+
+    def prepare_fold_data(
+        self,
+        comp: Competition,
+        train_indices: np.ndarray,
+        val_indices: np.ndarray,
+        fold_idx: int,
+        fold_dir: str,
+        private_dir: str
+    ) -> Tuple[str, str, Dict[str, str]]:
+        """
+        Prepare fold data for Photo Classification dataset and save as CSV files.
+        """
+        train_file = comp.get_file("train")
+        data = pd.read_csv(train_file.path)
+
+        image_col = comp.metadata.get("image_col", "ImageID")
+        labels_col = comp.metadata.get("labels_col", "Labels")
+
+        train_data = data.loc[data[image_col].isin(train_indices)].copy()
+        val_data = data.loc[data[image_col].isin(val_indices)].copy()
+
+        # Save training data
+        train_path = Path(fold_dir) / f"fold_{fold_idx}"
+        train_path.mkdir(exist_ok=True, parents=True)
+        train_csv_path = os.path.join(train_path, "train.csv")
+        train_data.to_csv(train_csv_path, index=False)
+
+        # Save validation features (public)
+        val_path = Path(private_dir) / f"fold_{fold_idx}"
+        val_path.mkdir(exist_ok=True, parents=True)
+        val_csv_path = os.path.join(val_path, "X_val.csv")
+
+        # Drop labels column for public validation features
+        val_data.drop(columns=[labels_col]).to_csv(val_csv_path, index=False)
+
+        # Save validation labels (private)
+        val_labels_path = os.path.join(val_path, "y_val.csv")
+        pd.DataFrame(val_data[[image_col, labels_col]]).to_csv(val_labels_path, index=False)
+
+        return train_path, val_path, {}
+
 
 class BikerRecommenderDataSplitter(DataSplitter):
     """Data splitter for biker tour recommendation system with multiple tables."""
@@ -889,5 +967,6 @@ DATA_SPLITTERS = {
     "emnist": EMNISTDataSplitter,
     "biker_recommender": BikerRecommenderDataSplitter,
     "multilabel": MultilabelDataSplitter,
-    "classify_leaves": ClassifyLeavesDataSplitter
+    "classify_leaves": ClassifyLeavesDataSplitter,
+    "photo_classification": PhotoClassificationDataSplitter
 }
