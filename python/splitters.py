@@ -956,6 +956,74 @@ class BikerRecommenderDataSplitter(DataSplitter):
         return table_df.copy()
 
 
+class SheepClassificationDataSplitter(DataSplitter):
+    """
+    Data splitter for sheep classification dataset 
+    using fixed 80:20 split with seed 42.
+    """
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
+        super().__init__(log_error, do_shutdown, grading_stage)
+
+    def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[List[str], List[str]]]:
+        """
+        Split Sheep Classification data using fixed 80:20 split.
+        """
+        self.prepare_competition_files(comp)
+
+        train_file = comp.get_file("train")
+        if not train_file or not train_file.exists():
+            raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
+
+        df = pd.read_csv(train_file.path)
+        image_col = comp.metadata.get("image_col", "filename")
+        target_col = comp.metadata.get("target_col", "label")
+
+        if image_col not in df.columns or target_col not in df.columns:
+            image_col, target_col = df.columns[0], df.columns[1]
+
+        images = df[image_col].tolist()
+        labels = df[target_col].tolist()
+
+        train_images, val_images, _, _ = train_test_split(images,
+                                                          labels,
+                                                          test_size=0.2,
+                                                          stratify=labels if comp.metadata.get("stratified_split", True) else None,
+                                                          random_state=42
+        )
+        return [(train_images, val_images)]
+
+    def prepare_fold_data(self, comp: Competition, train_indices: List[str], val_indices: List[str],
+                         fold_idx: int, fold_dir: str, private_dir: str) -> Tuple[str, str, Dict[str, str]]:
+        """Prepare fold data for Sheep Classification dataset and save as CSV files."""
+        train_file = comp.get_file("train")
+
+        # Load the original data
+        data = pd.read_csv(train_file.path)
+        image_col = comp.metadata.get("image_col", "filename")
+        target_col = comp.metadata.get("target_col", "label")
+
+        train_data = data.loc[data[image_col].isin(train_indices)].copy()
+        val_data = data.loc[data[image_col].isin(val_indices)].copy()
+
+        # Save training data for this fold
+        train_path = Path(fold_dir) / f"fold_{fold_idx}"
+        train_path.mkdir(exist_ok=True, parents=True)
+        train_csv_path = os.path.join(train_path, "train.csv")
+        train_data.to_csv(train_csv_path, index=False)
+
+        # Save validation features
+        val_path = Path(private_dir) / f"fold_{fold_idx}"
+        val_path.mkdir(exist_ok=True, parents=True)
+        val_csv_path = os.path.join(val_path, "X_val.csv")
+        val_data.drop(columns=[target_col]).to_csv(val_csv_path, index=False)
+
+        # Save validation labels (private)
+        val_labels_path = os.path.join(val_path, "y_val.csv")
+        pd.DataFrame(val_data[[image_col, target_col]]).to_csv(val_labels_path, index=False)
+
+        return train_path, val_path, {}
+    
+
 # Registry of data splitters
 DATA_SPLITTERS = {
     "csv": CSVDataSplitter,
@@ -968,5 +1036,6 @@ DATA_SPLITTERS = {
     "biker_recommender": BikerRecommenderDataSplitter,
     "multilabel": MultilabelDataSplitter,
     "classify_leaves": ClassifyLeavesDataSplitter,
-    "photo_classification": PhotoClassificationDataSplitter
+    "photo_classification": PhotoClassificationDataSplitter,
+    "sheep_classification": SheepClassificationDataSplitter
 }

@@ -719,7 +719,54 @@ def grader_photo_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dic
         return np.nan
 
 
-# Updated GRADERS registry
+def grader_sheep_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+    """
+    Specialized grader for sheep classification challenge 
+    that handles string labels and different prediction formats.
+    """
+    metric_name = comp.get("metric", "f1_score")
+    
+    try:
+        if isinstance(pred, list):
+            pred = pd.Series(pred)
+        elif isinstance(pred, np.ndarray):
+            pred = pd.Series(pred)
+        elif isinstance(pred, pd.DataFrame):
+            pred = pred.iloc[:, 0] if pred.shape[1] >= 1 else pred
+
+        # Handle different validation formats
+        if isinstance(val, pd.DataFrame):
+            val = val.iloc[:, 0] if val.shape[1] == 1 else val
+        elif isinstance(val, list):
+            val = pd.Series(val)
+        elif isinstance(val, np.ndarray):
+            val = pd.Series(val)
+
+        # Ensure both pred and val have the same length
+        min_len = min(len(pred), len(val))
+        pred = pred.iloc[:min_len] if hasattr(pred, 'iloc') else pred[:min_len]
+        val = val.iloc[:min_len] if hasattr(val, 'iloc') else val[:min_len]
+
+        if pred.dtype == 'object' and val.dtype == 'object':
+            pred = pred.astype(str)
+            val = val.astype(str)
+
+        # For f1_score with multi-class string labels, use average='macro'
+        if metric_name == "f1_score":
+            score = f1_score(val, pred, average='macro', zero_division=0)
+        else:
+            metric = METRICS.get(metric_name)
+            if metric is None:
+                common.report_error(f"grader_sheep_classification() : internal error : metric not found : {metric_name}")
+                common.graceful_exit(1)
+            score = metric(val, pred)
+        
+        return score
+    except Exception as e:
+        common.report_error(f"Sheep classification grader execution failed : {sys.exc_info()}")
+        return np.nan
+
+
 GRADERS = {
     "default": grader_default,
     "prml_nov2020": grader_prml_nov2020,
@@ -730,6 +777,7 @@ GRADERS = {
     "multitarget": grader_multitarget,
     "biker_recommender": grader_biker_recommender,
     "classify_leaves": grader_classify_leaves,
-    "photo_classification": grader_photo_classification
+    "photo_classification": grader_photo_classification,
+    "sheep_classification": grader_sheep_classification
 }
 

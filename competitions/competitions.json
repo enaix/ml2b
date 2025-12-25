@@ -365,5 +365,24 @@
 	    "split_strategy": "photo_classification",
 	    "load_strategy": "photo_classification",
 	    "grader": "photo_classification"
-	}
+	},
+    "sheep-classification-challenge-2025": {
+        "metric": "f1_score",
+        "target_col": "label",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "predict the label of the correct date type (string)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train_labels.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "sheep_classification",
+        "load_strategy": "sheep_classification",
+        "grader": "sheep_classification",
+        "stratified_split": true,
+        "image_col": "filename",
+        "image_dir": "train"
+    }
 }
