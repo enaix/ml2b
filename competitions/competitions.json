@@ -271,5 +271,118 @@
         "split_strategy": "csv",
         "load_strategy": "default",
         "grader": "multitarget"
+    },
+    "itmo-flat-price-prediction-2024": {
+        "metric": "root_mean_squared_error",
+        "target_col": "price",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "car-becho-paisa-paao": {
+        "metric": "root_mean_squared_error",
+        "target_col": "price",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "cs-506-fall-2025-technical-midterm": {
+        "metric": "f1_score_avg_macro",
+        "target_col": "Score",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "playground-series-s5e3": {
+        "metric": "roc_auc_score",
+        "target_col": "rainfall",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "predict a probability for the target rainfall",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+		"load_strategy": "default",
+        "grader": "default"
+    },
+    "ift-6390-ift-3395-beer-quality-prediction": {
+        "metric": "accuracy_score",
+        "target_col": "quality",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "predict a quality score (int in [1, 10])",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+		"load_strategy": "default",
+        "grader": "default"
+    },
+	"multi-label-classification-competition-2025": {
+	    "metric": "fbeta_score_micro",
+	    "beta": 1.0,
+	    "target_col": "Labels",
+	    "direction": "maximize",
+	    "cv_folds": 1,
+	    "output_hint": "predicted labels per image as whitespace-separated integers (e.g. \"8 3 13\")",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+	    "split_strategy": "photo_classification",
+	    "load_strategy": "photo_classification",
+	    "grader": "photo_classification"
+	},
+    "sheep-classification-challenge-2025": {
+        "metric": "f1_score",
+        "target_col": "label",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "predict the label of the correct date type (string)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train_labels.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "sheep_classification",
+        "load_strategy": "sheep_classification",
+        "grader": "sheep_classification",
+        "stratified_split": true,
+        "image_col": "filename",
+        "image_dir": "train"
     }
 }

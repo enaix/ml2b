@@ -6,7 +6,8 @@ default_kwargs: &default_kwargs
   copy_data: True
   agent.search.debug_prob: 1
   agent.expose_prediction: True
-  exec.timeout: 3600
+  agent.time_limit: 10800
+  exec.timeout: 1800
   exp_name: bench
 
 kwargs_type: omegaconf
@@ -20,4 +21,7 @@ env_vars:
   TIME_LIMIT_SECS: 10800 #time in seconds
   # http_proxy: *
   # https_proxy: *
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} #export OPENAI_API_KEY on host
+  OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }} #export OPENAI_BASE_URL on host for custom openai compatible api
+  # VERTEX=true #use vertex models
+  # VERTEX_SERVICE_ACCOUNT=${AGENT_DIR}/service_account.json #path to service account credentials for vertex on host
