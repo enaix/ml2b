@@ -21,4 +21,7 @@ env_vars:
   TIME_LIMIT_SECS: 10800 #time in seconds
   # http_proxy: *
   # https_proxy: *
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} #export OPENAI_API_KEY on host
+  OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }} #export OPENAI_BASE_URL on host for custom openai compatible api
+  # VERTEX=true #use vertex models
+  # VERTEX_SERVICE_ACCOUNT=${AGENT_DIR}/service_account.json #path to service account credentials for vertex on host
