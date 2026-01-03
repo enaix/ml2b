@@ -848,6 +848,23 @@ class PhotoClassificationDataSplitter(DataSplitter):
         val_labels_path = os.path.join(val_path, "y_val.csv")
         pd.DataFrame(val_data[[image_col, labels_col]]).to_csv(val_labels_path, index=False)
 
+        # Copy imgs
+        original_train_csv = Path(train_file.path)
+        original_image_dir = original_train_csv.parent / "data"
+
+        if not original_image_dir.exists():
+            raise FileNotFoundError(f"Original image dir not found: {original_image_dir}")
+        
+        target_image_dir = train_path / "data"
+        target_image_dir.mkdir(parents=True, exist_ok=True)
+        for img_name in train_data[image_col]:
+            shutil.copy2(original_image_dir / img_name, target_image_dir / img_name)
+        
+        target_image_dir = val_path / "data"
+        target_image_dir.mkdir(parents=True, exist_ok=True)
+        for img_name in val_data[image_col]:
+            shutil.copy2(original_image_dir / img_name, target_image_dir / img_name)        
+
         return train_path, val_path, {}
 
 
