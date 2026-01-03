@@ -34,7 +34,13 @@ competition_map = {
     "rutgers-data101-fall2022-assignment-12": "rutgers-data101-fall2022-assignment-12",
     "2024-datalab-cup1": "2024-datalab-cup1",
     "ece460j-fall24": "ece460j-fall24",
-    
+    "playground-series-s5e3": "playground-series-s5e3",
+    "cs-506-fall-2025-technical-midterm": "cs-506-fall-2025-technical-midterm",
+    "car-becho-paisa-paao": "car-becho-paisa-paao",
+    "itmo-flat-price-prediction-2024": "itmo-flat-price-prediction-2024",
+    "2018-spring-cse6250-hw1": "2018-spring-cse6250-hw1",
+    "ift-6390-ift-3395-beer-quality-prediction": "ift-6390-ift-3395-beer-quality-prediction",
+    "multi-label-classification-competition-2025": "multi-label-classification-competition-2025",
 }
 
 DATA_URL = "https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf"
