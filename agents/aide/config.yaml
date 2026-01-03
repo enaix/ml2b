@@ -6,7 +6,8 @@ default_kwargs: &default_kwargs
   copy_data: True
   agent.search.debug_prob: 1
   agent.expose_prediction: True
-  exec.timeout: 3600
+  agent.time_limit: 10800
+  exec.timeout: 1800
   exp_name: bench
 
 kwargs_type: omegaconf
