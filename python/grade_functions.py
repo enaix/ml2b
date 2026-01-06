@@ -684,14 +684,14 @@ def grader_photo_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dic
         min_len = min(len(pred), len(val))
         pred = pred.iloc[:min_len]
         val = val.iloc[:min_len]
-
+        
         def to_label_list(x):
-            if pd.isna(x) or x == "":
-                return []
-            if isinstance(x, (list, set)):
-                return list(map(int, x))
+            if isinstance(x, (int, np.integer)):
+                return [int(x)]
             if isinstance(x, str):
                 return list(map(int, x.split()))
+            if isinstance(x, (list, set)):
+                return list(map(int, x))
             return []
 
         y_pred = pred.apply(to_label_list).tolist()
