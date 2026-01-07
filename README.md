@@ -53,5 +53,5 @@ After these steps, you should see the following structure:
 
 2. Run the benchmark (see `python run.py bench --help` for more options):
    ```bash
-   python run.py bench -i aide -w 4 --agent-dir agents/aide --seed 42 --args-variant extended --code-variant extended
+   python run.py bench -i aide -w 3 --agent-dir agents/aide --seed 42 --args-variant extended --code-variant extended
    ```
