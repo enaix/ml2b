@@ -6,6 +6,7 @@ default_kwargs: &default_kwargs
   copy_data: True
   agent.search.debug_prob: 1
   agent.expose_prediction: True
+  agent.time_limit: 10800
   exec.timeout: 1800
   exp_name: bench
 
@@ -17,7 +18,10 @@ kwargs:
   agent.feedback.model: gpt-4.1-mini
   report.model: gpt-4.1-mini
 env_vars:
-  TIME_LIMIT_SECS: 43200 #time in seconds
-  http_proxy: http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900
-  https_proxy: http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  TIME_LIMIT_SECS: 10800 #time in seconds
+  # http_proxy: *
+  # https_proxy: *
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} #export OPENAI_API_KEY on host
+  OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }} #export OPENAI_BASE_URL on host for custom openai compatible api
+  # VERTEX=true #use vertex models
+  # VERTEX_SERVICE_ACCOUNT=${AGENT_DIR}/service_account.json #path to service account credentials for vertex on host
