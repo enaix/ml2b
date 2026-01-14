@@ -11,14 +11,14 @@ RUN apt-get update && apt-get install -y \
 
 RUN useradd -m -U -s /bin/bash bench
 
-COPY requirements.txt ./
+COPY python/requirements.txt ./
 
 RUN umask 012 # files must not be writeable to the submission script
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY *.py python
-COPY ../loaders loaders
+COPY python python
+COPY loaders loaders
 
 ENV PYTHONPATH="/home/bench"
 

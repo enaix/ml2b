@@ -11,9 +11,9 @@ def main():
     parser.add_argument('competition_id', help='ID of the competition to run')
     parser.add_argument('lang', help='Competition language')
     parser.add_argument('code_path', help='Path to the Python code file to test')
-    parser.add_argument('--mode', '-m', choices=['mono', 'modular'], default='mono',
+    parser.add_argument('--mode', '-m', choices=['mono', 'modular'], default='modular',
                        help='Execution mode: mono (monolithic) or modular (default: mono)')
-    parser.add_argument('--extended_schema', '-e', choices=['y', 'n'], default='n', help='Use extended schema for submission code')
+    parser.add_argument('--extended_schema', '-e', choices=['y', 'n'], default='y', help='Use extended schema for submission code')
     parser.add_argument('--folds', '-f', type=int, help='Override number of folds')
     parser.add_argument('--rebuild', '-r', action='store_true', 
                        help='Rebuild Docker container before running')
@@ -77,6 +77,7 @@ def main():
         
     except subprocess.CalledProcessError as e:
         print("Error running grade.sh:")
+        print(e.stdout)
         print(e.stderr)
         print(f"Grade.sh failed with return code {e.returncode}")
     except Exception as e:
