@@ -41,32 +41,28 @@ def mean_average_precision_k(y_true, y_pred_topk, k=5):
     return np.mean([apk(a, p, k) for a, p in zip(y_true, y_pred_topk)])
 
 
-def calculate_wae(y_pred: np.array, val: pd.DataFrame) -> float:
+def calculate_wmae(y_true: np.array, y_pred: np.array, comp: dict, extra_data_val: pd.DataFrame) -> float:
     """
-    Calculate Weighted Mean Absolute Error For Income
+    Calculate Weighted Mean Absolute Error
 
     Args:
-        pred : DataFrame with income predictions
-        val: DataFrame with weights for evaluation and true targets
+        y_true: True y
+        y_pred: Predicted y
+        comp: Competition metadata dict
+        extra_data_val: Extra columns, must include 'w'
 
     Returns:
         Weighted Mean Absolute Error
     """
-
-    if 'w' not in val.columns:
-        weight_vals = np.ones(y_pred.shape[0])
-    else:
-        weight_vals = val['w'].values
-
-    if 'target' not in val.columns:
-        common.report_error("Validation data missing 'target' column")
-        return np.nan
-    y_true = val['target'].values
-    if y_pred.shape != y_true.shape:
-        common.report_error("The number of true values and predictions is not equal")
+    if comp.get('weight_col') is None:
+        common.report_error(f"calculate_wmae() : Could not calculate wmae : no \'weight_col\' field in competition metadata")
         return np.nan
 
-    return (weight_vals * np.abs(y_true - y_pred)).mean()
+    if comp['weight_col'] not in extra_data_val.columns:
+        common.report_error(f"calculate_wmae() : Could not calculate wmae : no \'{comp['weight_col']}\' field in extra columns")
+        return np.nan
+
+    return (extra_data_val[comp['weight_col']] * np.abs(y_true - y_pred)).mean()
 
 
 def calculate_ap_at_k(y_true_tours: List[int], predicted_ranking: List[int], k: int = None) -> float:
@@ -264,6 +260,7 @@ def calculate_rmsle(y_pred: pd.DataFrame, val: pd.DataFrame) -> float:
         return np.nan
     
 
+# Metrics which accept two parameters
 METRICS = {
     "roc_auc_score": roc_auc_score,
     "f1_score": f1_score,
@@ -285,17 +282,30 @@ METRICS = {
     "root_mean_squared_error_multitarget": calculate_rmse
 }
 
+# Metrics which accept extra fields (comp and extra_data_val)
+METRICS_EXTRA = {
+    "wmae": calculate_wmae
+}
+
+
+
 # Default grader
 # ==============
 
-def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data: dict):
     """Default grader using specified metric from competition config"""
     metric_name = comp.get("metric", "accuracy_score")
-    metric = METRICS.get(metric_name)
 
-    if metric is None:
+    if metric_name not in METRICS and metric_name not in METRICS_MULTICOL:
         common.report_error(f"grader_default() : internal error : metric not found : {metric_name}")
         common.graceful_exit(1)
+
+    if metric_name in METRICS:
+        is_multicol = False
+        metric = METRICS.get(metric_name)
+    else:
+        is_multicol = True
+        metric = METRICS_MULTICOL.get(metric_name)
 
     try:
         # Handle different input formats
@@ -309,7 +319,14 @@ def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
         else:
             val_values = val
 
-        score = metric(val_values, pred_values)
+        if is_multicol:
+            score = metric(val_values, pred_values)
+        else:
+            # Load excluded columns for validation
+            if extra_data.get("extra_val") is None:
+                common.report_error(f"Grader execution failed : no extra columns found, metric {metric_name} requires additional columns")
+                return np.nan
+            score = metric(val_values, pred_values, comp, extra_data["excluded_cols_val"])
         return score
     except Exception:
         common.report_error(f"Grader execution failed : {sys.exc_info()}")
@@ -321,7 +338,7 @@ def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
 # ==============
 
 
-def grader_prml_nov2020(pred: pd.DataFrame, val: pd.DataFrame, comp: dict) -> float:
+def grader_prml_nov2020(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data: dict) -> float:
     """
     Grader for PRML Data Contest Nov 2020 - Tour Recommendation System
     
@@ -390,7 +407,7 @@ def grader_prml_nov2020(pred: pd.DataFrame, val: pd.DataFrame, comp: dict) -> fl
         return np.nan
 
 
-def grader_binary_classification_from_ranking(pred: pd.DataFrame, val: pd.DataFrame, comp: dict) -> float:
+def grader_binary_classification_from_ranking(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data: dict) -> float:
     """
     Alternative grader that converts the ranking problem to binary classification
     for easier debugging and comparison with other metrics
@@ -445,7 +462,7 @@ def grader_binary_classification_from_ranking(pred: pd.DataFrame, val: pd.DataFr
         return np.nan
 
 
-def grader_multilabel(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+def grader_multilabel(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data: dict):
     """Default grader with multi-label string parsing"""
     metric_name = comp.get("metric", "accuracy_score")
     metric = METRICS.get(metric_name)
@@ -489,7 +506,7 @@ def _parse_multi_label_string_grader(label_str):
     return [label_str.strip()]
 
 
-def grader_biker_recommender(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+def grader_biker_recommender(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data: dict):
     """
     Grader for recommender systems using Mean Average Precision (MAP).
     Only uses positive interactions (like=1) for evaluation.
@@ -579,7 +596,7 @@ def _convert_to_dataframe(data: Any) -> pd.DataFrame:
         raise ValueError(f"Unsupported data format: {type(data)}")
 
 
-def grader_multitarget(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+def grader_multitarget(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data: dict):
     """
     Specialized grader for multi-target tasks.
     """
@@ -614,7 +631,7 @@ def grader_multitarget(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
         common.report_error(f"Multitarget grader execution failed : {sys.exc_info()}")
         return np.nan
 
-def grader_classify_leaves(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+def grader_classify_leaves(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data: dict):
     """
     Specialized grader for image classification tasks that handles string labels and different prediction formats.
     """
@@ -656,7 +673,7 @@ def grader_classify_leaves(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
         common.report_error(f"Image classification grader execution failed : {sys.exc_info()}")
         return np.nan
 
-def grader_photo_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+def grader_photo_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data: dict):
     """
     Grader for multi-label image classification using sklearn's
     fbeta_score with micro averaging.
@@ -719,7 +736,7 @@ def grader_photo_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dic
         return np.nan
 
 
-def grader_sheep_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dict):
+def grader_sheep_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data: dict):
     """
     Specialized grader for sheep classification challenge 
     that handles string labels and different prediction formats.

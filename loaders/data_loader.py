@@ -25,6 +25,9 @@ class DataLoader(ABC):
         """Load validation labels from hardcoded private directory"""
         pass
 
+    def load_grader_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
+        """Load additional data which is passed to the grader, returns an empty dict by default"""
+        return {}
 
     @classmethod
     def schema_dict(cls, schema_type: type | None = None, expose: bool = False, parent_key: str | None = None) -> dict[str, Any]:

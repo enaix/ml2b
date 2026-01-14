@@ -349,6 +349,15 @@
 		"load_strategy": "default",
         "grader": "default"
     },
+    "alfa-university-income-prediction": {
+        "metric": "wmae",
+        "target_col": "target",
+        "exclude_cols": ["w"],
+        "weight_col": "w",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted values for target (floats)"
+    },
 	"multi-label-classification-competition-2025": {
 	    "metric": "fbeta_score_micro",
 	    "beta": 1.0,
