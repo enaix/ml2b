@@ -227,9 +227,10 @@ class CSVDataSplitter(DataSplitter):
         additional_files = {}
         # Make sure that columns like weights are always excluded
         COL_NAMES_TO_EXCLUDE = ["weight_col"]
-        exclude_cols = list(set(comp.metadata.get("exclude_cols", [])).union(
+        # On non-cpython implementations, set is not stable
+        exclude_cols = sorted(list(set(comp.metadata.get("exclude_cols", [])).union(
             set([comp.metadata[field] for field in COL_NAMES_TO_EXCLUDE if comp.metadata.get(field) is not None])
-        ))
+        )))
         drop_cols_X = exclude_cols + [target_col]
 
         # Split data using the provided indices
@@ -239,7 +240,7 @@ class CSVDataSplitter(DataSplitter):
 
         if exclude_cols:
             extra_data = train_df[exclude_cols]
-            extra_train, extra_val = extra_data.iloc[train_indicies], extra_data.iloc[val_indicies]
+            extra_train, extra_val = extra_data.iloc[train_indices], extra_data.iloc[val_indices]
 
         # Save fold data
         train_fold = pd.concat([X_train, y_train], axis=1)

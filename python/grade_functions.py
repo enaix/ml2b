@@ -296,7 +296,7 @@ def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data
     """Default grader using specified metric from competition config"""
     metric_name = comp.get("metric", "accuracy_score")
 
-    if metric_name not in METRICS and metric_name not in METRICS_MULTICOL:
+    if metric_name not in METRICS and metric_name not in METRICS_EXTRA:
         common.report_error(f"grader_default() : internal error : metric not found : {metric_name}")
         common.graceful_exit(1)
 
@@ -305,7 +305,7 @@ def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data
         metric = METRICS.get(metric_name)
     else:
         is_multicol = True
-        metric = METRICS_MULTICOL.get(metric_name)
+        metric = METRICS_EXTRA.get(metric_name)
 
     try:
         # Handle different input formats
