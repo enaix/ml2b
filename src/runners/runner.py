@@ -48,6 +48,8 @@ class RunnerSpec(BaseModel):
     agent_dir: Path
     network: str | None
     extended_schema: bool
+    internet_control: str
+    proxy_conf: Path
 
 class Task(BaseModel):
     idx: int
@@ -272,7 +274,9 @@ class DockerRunner:
             code_template_variant=self.runner_spec.code_variant,
             task_info=task_description,
             full_schema=loader_class.schema(expose=self.runner_spec.extended_schema),
-            schema_dict=loader_class.schema_dict(expose=self.runner_spec.extended_schema)
+            schema_dict=loader_class.schema_dict(expose=self.runner_spec.extended_schema),
+            return_type=loader_class.get_return_type(),
+            return_desc=loader_class.get_return_description(),
         )
         task_prompt = self.task_builder.render(task_context)
         logger.info("TASK: {}", task_prompt)
@@ -310,7 +314,8 @@ class DockerRunner:
                     task.unique_name,
                     parse_runtime_config(self.runner_spec.runtime_config),
                     self.runner_spec.image_name,
-                    self.runner_spec.extended_schema
+                    self.runner_spec.extended_schema,
+                    self.runner_spec.internet_control
                 )
             with open(run_dir / "code_results.json", "w", encoding="utf-8") as fp:
                 json.dump(result, fp, indent=2)

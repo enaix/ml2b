@@ -185,7 +185,10 @@ class BenchPipeline:
         self.current_fold += 1
         return fold
 
-    def test_submission_code(self, comp: Competition, lang: Language, codelang: CodeLanguage, code: str, client: DockerClient, uniq_suf: str, runtime_config: dict[str, Any], image_name: str, extended_schema: bool = False) -> dict:
+    def test_submission_code(self, comp: Competition, lang: Language, 
+                             codelang: CodeLanguage, code: str, client: DockerClient, 
+                             uniq_suf: str, runtime_config: dict[str, Any], image_name: str, 
+                             extended_schema: bool = False, internet_control: str = "proxy") -> dict:
         """
         Submit the code and return metric
         """
@@ -217,25 +220,38 @@ class BenchPipeline:
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONPATH": "/home/bench"
         }
-        network_name = "python_no_inet"
+        proxy_env = {}
+        if internet_control == "proxy":
+            network_name = "benchmark_net"
+            proxy_env = {
+                "HTTP_PROXY": "http://benchmark-proxy:3128",
+                "HTTPS_PROXY": "http://benchmark-proxy:3128",
+            }
+        elif internet_control == "no":
+            network_name = "python_no_inet"
+            try:
+                client.networks.create(network_name, driver="bridge", internal=True)
+            except Exception:
+                logger.info("Network already exists, no error")
+        else:
+            network_name = "bridge"
 
-        # Check if the network exists
-        try:
-            client.networks.create(network_name, driver="bridge", internal=True)
-        except Exception:
-            logger.info("Network already exists, no error")
         container = client.containers.run(
             image=image_name,
             detach=True,
-            environment=env_vars,
+            environment={
+                **env_vars,
+                **proxy_env
+            },
             volumes={
                 submission_dir.as_posix(): {'bind': '/home/bench/submission', 'mode': 'rw'},
                 (Path(self.base_path()) / "competitions").resolve().as_posix(): {'bind': '/home/bench/competitions', 'mode': 'ro'}
             },
-            network="python_no_inet",
+            network=network_name,
             entrypoint=["mamba", "run", "-n", "agent", "python", "python/bench.py"],
             **runtime_config,
-            working_dir="/home/bench"
+            working_dir="/home/bench",
+            user="root"
         )
 
         exit_code = container.wait(timeout=60*60)

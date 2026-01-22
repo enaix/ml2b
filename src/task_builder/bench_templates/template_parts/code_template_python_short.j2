@@ -15,11 +15,13 @@ from typing import TypedDict
 {% for class_code in type_defs.values() %}
 {{ class_code }}
 {% endfor %}
-def train_and_predict({% for key, value in full_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> np.ndarray:
+def train_and_predict({% for key, value in full_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> {{ return_type }}:
     """
     This function takes the training data, validation features and returns the predictions for validation features
 
     {{ full_doc | indent(4) }}
+    Returns:
+        {{ return_type }}: {{ return_desc }}
     """
     ...
 ```

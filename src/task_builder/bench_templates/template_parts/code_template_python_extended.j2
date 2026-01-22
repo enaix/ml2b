@@ -36,22 +36,26 @@ def prepare_val(train_output: Any, {% for key, value in val_spec.items() %}{{ ke
     ...
 
 
-def predict(train_output: Any, prepare_val_output: Any) -> np.ndarray:
+def predict(train_output: Any, prepare_val_output: Any) -> {{ return_type }}:
     """
     This function takes train and prepare_val functions outputs and generates the prediction for validation features
 
     Args:
         train_output (Any): Output from the train function
         prepare_val_output (Any): Output from the prepare_val function, which is the processed X_val dataframe
+    Returns:
+        {{ return_type }}: {{ return_desc }}
     """
     ...
 
 
-def run({% for key, value in full_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> np.ndarray:
+def run({% for key, value in full_spec.items() %}{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}{% endfor %}) -> {{ return_type }}:
     """
     This function takes the training data, validation features and returns the predictions for validation features
 
     {{ full_doc | indent(4) }}
+    Returns:
+        {{ return_type }}: {{ return_desc }}
     """
     train_output = train({% for key in train_spec.keys() %}{{ key }}{% if not loop.last %}, {% endif %}{% endfor %})
     return predict(train_output, prepare_val(train_output, {% for key in val_spec.keys() %}{{ key }}{% if not loop.last %}, {% endif %}{% endfor %}))
