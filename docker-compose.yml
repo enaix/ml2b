@@ -1,6 +1,8 @@
 services:
   bench_python:
-    build: ./python
+    build:
+      context: .
+      dockerfile: python/Dockerfile
     restart: always
     container_name: bench_python
     volumes:
@@ -13,6 +15,7 @@ services:
       BENCH_LANG: ${BENCH_LANG}
       BENCH_MODE: ${BENCH_MODE}
       BENCH_FOLDS_OVERRIDE: ${BENCH_FOLDS_OVERRIDE}
+      EXTENDED_SCHEMA: ${EXTENDED_SCHEMA}
 networks:
   python_no_inet:
     driver: bridge
