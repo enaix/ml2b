@@ -144,10 +144,23 @@ def build_runtime(image_name: str, agent_dir: Path, platform: str) -> None:
     default="short",
     help="Extended or short code variant bechmark"
 )
+@click.option(
+    "--internet-control",
+    type=click.Choice(["no", "proxy"]),
+    default="proxy",
+    help="Use squid proxy for access to hf and torch domains"
+)
+@click.option(
+    "--proxy-config",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True, path_type=Path),
+    default=DEFAULT_RUNTIME_PATH / "squid.conf",
+    help="Path to squid proxy config file, use only if internet-control is proxy",
+)
 def bench(image_name: str, workers: int, data_dir: Path, 
           runtime_config: Path, log_level: str, logs_dir: Path, 
           competitions: Path, folds: int, seed: int|None, code_variant: str, 
-          agent_dir: Path, network: str|None, args_variant: str
+          agent_dir: Path, network: str|None, args_variant: str,
+          internet_control: str, proxy_config: Path
           ) -> None:
     """
     Run main benchmark pipline
@@ -166,7 +179,9 @@ def bench(image_name: str, workers: int, data_dir: Path,
         code_variant=code_variant,
         agent_dir=agent_dir.resolve(),
         network=network,
-        extended_schema = (args_variant == "extended")
+        extended_schema = (args_variant == "extended"),
+        internet_control=internet_control,
+        proxy_conf=proxy_config
     )
     setup_logger(runner_spec.log_level, runner_spec.logs_dir, file_log_level=runner_spec.log_level)
     logger.info(f"[blue]Run benchmark with runner spec:\n{runner_spec.model_dump_json(indent=2)}[/blue]")

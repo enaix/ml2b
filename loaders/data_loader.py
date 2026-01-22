@@ -1,14 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, get_type_hints, get_args
+from typing import Any, Dict, get_type_hints, get_args, get_origin
 #from python.competition import Competition
 from python.competition import *
 import pandas as pd
+import numpy as np
 
 
 
 class DataLoader(ABC):
     """Abstract base class for competition data loading strategies"""
     DEFAULT_SCHEMA = {}
+    RETURN_TYPE = np.ndarray
+    RETURN_SHAPE = None
 
     @abstractmethod
     def load_train_data(self, comp: Competition, fold_idx: int, base_path: str) -> Dict[str, Any]:
@@ -108,13 +111,66 @@ class DataLoader(ABC):
                 result_sorted[key] = result[key]
         return result_sorted
 
+    @classmethod
+    def get_return_type(cls) -> str:
+        """Get the return type annotation for the competition"""
+        if cls.RETURN_TYPE is None:
+            return "Any"
+        
+        # Если это строка, вернуть как есть
+        if isinstance(cls.RETURN_TYPE, str):
+            return cls.RETURN_TYPE
+        
+        from typing import Annotated
+        origin = get_origin(cls.RETURN_TYPE)
+        
+        if origin is Annotated:
+            args = get_args(cls.RETURN_TYPE)
+            if args:
+                base_type = args[0]
+                return cls._normalize_type(base_type)
+
+        return cls._normalize_type(cls.RETURN_TYPE)
+
+    @classmethod
+    def get_return_description(cls) -> str:
+        """Get the full description of return value including shape if available"""
+        parts = []
+        
+        if cls.RETURN_TYPE is not None:
+            args = get_args(cls.RETURN_TYPE)
+            if args and len(args) > 1:
+                parts.append(str(args[1]))
+        
+        if cls.RETURN_SHAPE:
+            shape_desc = f"with shape {cls.RETURN_SHAPE}"
+            parts.append(shape_desc)
+        
+        if not parts:
+            return "Predictions for validation data"
+        
+        return " ".join(parts)
+
     @staticmethod
     def _normalize_type(tp: type) -> str:
         """Simplify the string representation of a type"""
+        
+        # Handle generic types (List[int], Dict[str, int], etc.)
+        origin = get_origin(tp)
+        args = get_args(tp)
+        
+        if origin is not None and args:
+            origin_name = getattr(origin, "__name__", str(origin))
+            args_str = ", ".join(DataLoader._normalize_type(arg) for arg in args)
+            return f"{origin_name}[{args_str}]"
+        
         module = getattr(tp, "__module__", "")
         name = getattr(tp, "__name__", str(tp))
+        
         if module == "pandas.core.frame":
             return "pd.DataFrame"
+        elif module == "pandas.core.series":
+            return "pd.Series"
         elif module == "numpy":
             return "np.ndarray"
         elif module in ("builtins", ""):

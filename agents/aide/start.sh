@@ -13,6 +13,7 @@ mkdir -p ${AGENT_DIR}/logs
 
 ln -sf /home/logs ${AGENT_DIR}/logs/bench
 ln -sf /home/submission/submission.py ${AGENT_DIR}/logs/bench/best_solution.py
+
 # run with timeout, and print if timeout occurs
 timeout $TIME_LIMIT_SECS aide $@
 if [ $? -eq 124 ]; then

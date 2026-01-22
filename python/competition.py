@@ -5,18 +5,18 @@ import math
 
 
 class Language(StrEnum):
-    English = "English"
+    # English = "English"
     Arab = "Arab"
-    Chinese = "Chinese"
-    Italian = "Italian"
+    # Chinese = "Chinese"
+    # Italian = "Italian"
     Kazakh = "Kazakh"
     Polish = "Polish"
-    Romanian = "Romanian"
+    # Romanian = "Romanian"
     Spanish = "Spanish"
-    Turkish = "Turkish"
+    # Turkish = "Turkish"
     Belarus = "Belarus"
     Japanese = "Japanese"
-    Russian = "Russian"
+    # Russian = "Russian"
     French = "French"
 
 
