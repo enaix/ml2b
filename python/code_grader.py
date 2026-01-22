@@ -79,6 +79,9 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
             # Load validation labels
             val_labels = loader.load_validation_labels(comp, fold_idx, base_path)
 
+            # Load extra data for grader
+            grader_data = loader.load_grader_data(comp, fold_idx, base_path)
+
             # if not isinstance(loader_train_dataset, dict) and not isinstance(loader_val_features_dataset, dict):
                 # common.report_error(f"Data loader shapes : train {str(loader_train_dataset.shape)}; val {str(loader_val_features_dataset.shape)}; val_y {val_labels.shape}")
 
@@ -119,7 +122,7 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
 
                 # Grade the predictions against true labels
                 # common.report_error(f"Grader shapes : pred {predictions.shape}; val_prepared {val_prepared.shape}; val_labels {val_labels.shape}")
-                score = GRADERS[grader](predictions, val_labels, comp.metadata)
+                score = GRADERS[grader](predictions, val_labels, comp.metadata, grader_data)
                 scores.append(score)
                 print(f"grade_llm_code() : finished fold {fold_idx+1}/{folds}")
 

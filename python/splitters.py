@@ -223,10 +223,24 @@ class CSVDataSplitter(DataSplitter):
         train_df = read_csv_smart(train_file.path)
         target_col = comp.metadata["target_col"]
 
+        # Manage additional columns
+        additional_files = {}
+        # Make sure that columns like weights are always excluded
+        COL_NAMES_TO_EXCLUDE = ["weight_col"]
+        # On non-cpython implementations, set is not stable
+        exclude_cols = sorted(list(set(comp.metadata.get("exclude_cols", [])).union(
+            set([comp.metadata[field] for field in COL_NAMES_TO_EXCLUDE if comp.metadata.get(field) is not None])
+        )))
+        drop_cols_X = exclude_cols + [target_col]
+
         # Split data using the provided indices
-        X, y = train_df.drop(columns=target_col), train_df[target_col]
+        X, y = train_df.drop(columns=drop_cols_X), train_df[target_col]
         X_train, y_train = X.iloc[train_indices], y.iloc[train_indices]
         X_val, y_val = X.iloc[val_indices], y.iloc[val_indices]
+
+        if exclude_cols:
+            extra_data = train_df[exclude_cols]
+            extra_train, extra_val = extra_data.iloc[train_indices], extra_data.iloc[val_indices]
 
         # Save fold data
         train_fold = pd.concat([X_train, y_train], axis=1)
@@ -234,12 +248,18 @@ class CSVDataSplitter(DataSplitter):
         train_path.mkdir(exist_ok=True, parents=True)
         val_path = Path(private_dir) / f"fold_{fold_idx}"
         val_path.mkdir(exist_ok=True, parents=True)
+        # Save extra cols
+        if exclude_cols:
+            additional_files["excluded_cols_train"] = train_path / "excluded_cols_train.csv"
+            additional_files["excluded_cols_val"] = val_path / "excluded_cols_val.csv"
+            extra_train.to_csv(additional_files["excluded_cols_train"], index=False)
+            extra_val.to_csv(additional_files["excluded_cols_val"], index=False)
 
         train_fold.to_csv(train_path / "train.csv", index=False)
         X_val.to_csv(val_path / "X_val.csv", index=False)
         y_val.to_csv(val_path / "y_val.csv", index=False)
 
-        return train_path, val_path, {}
+        return train_path, val_path, additional_files
 
 
 class MultilabelDataSplitter(DataSplitter):
