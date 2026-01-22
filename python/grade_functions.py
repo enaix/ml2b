@@ -54,15 +54,16 @@ def calculate_wmae(y_true: np.array, y_pred: np.array, comp: dict, extra_data_va
     Returns:
         Weighted Mean Absolute Error
     """
+
     if comp.get('weight_col') is None:
         common.report_error(f"calculate_wmae() : Could not calculate wmae : no \'weight_col\' field in competition metadata")
         return np.nan
 
-    if comp['weight_col'] not in extra_data_val.columns:
+    if comp['weight_col'] not in extra_data_val:
         common.report_error(f"calculate_wmae() : Could not calculate wmae : no \'{comp['weight_col']}\' field in extra columns")
         return np.nan
 
-    return (extra_data_val[comp['weight_col']] * np.abs(y_true - y_pred)).mean()
+    return (extra_data_val[comp['weight_col']].to_numpy().flatten() * np.abs(y_true - y_pred)).mean()
 
 
 def calculate_ap_at_k(y_true_tours: List[int], predicted_ranking: List[int], k: int = None) -> float:
@@ -288,7 +289,6 @@ METRICS_EXTRA = {
 }
 
 
-
 # Default grader
 # ==============
 
@@ -319,14 +319,14 @@ def grader_default(pred: pd.DataFrame, val: pd.DataFrame, comp: dict, extra_data
         else:
             val_values = val
 
-        if is_multicol:
+        if not is_multicol:
             score = metric(val_values, pred_values)
         else:
             # Load excluded columns for validation
             if extra_data.get("extra_val") is None:
                 common.report_error(f"Grader execution failed : no extra columns found, metric {metric_name} requires additional columns")
                 return np.nan
-            score = metric(val_values, pred_values, comp, extra_data["excluded_cols_val"])
+            score = metric(val_values, pred_values, comp, extra_data["extra_val"])
         return score
     except Exception:
         common.report_error(f"Grader execution failed : {sys.exc_info()}")

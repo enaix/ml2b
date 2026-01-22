@@ -72,7 +72,7 @@ def main():
             cmd.append(str(args.folds))
 
         # This runs the grade.sh script, which builds the container and runs bench.py inside it
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr, text=True, check=True)
         print(result.stdout)
         
     except subprocess.CalledProcessError as e:
