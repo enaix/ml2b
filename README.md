@@ -55,3 +55,7 @@ After these steps, you should see the following structure:
    ```bash
    python run.py bench -i aide -w 3 --agent-dir agents/aide --seed 42 --args-variant extended --code-variant extended
    ```
+
+### Documentation
+
+General documentation can be found in [docs](docs/)
