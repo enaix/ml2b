@@ -99,8 +99,18 @@ async def execute_bench(runner_spec: RunnerSpec):
     base_path = Path(__file__).resolve().absolute().parent.parent
     runner = DockerRunner(runner_spec)
     bench = BenchPipeline(base_path, runner_spec.folds, runner.input_mode == RunnerInput.DescAndData)
-    asyncio.create_task(feed_competitions(bench, runner))
-    await runner.run()
+    
+    feed_task = asyncio.create_task(feed_competitions(bench, runner))
+    run_task = asyncio.create_task(runner.run())
+    
+    try:
+        await asyncio.gather(feed_task, run_task, return_exceptions=True)
+    except Exception as e:
+        logger.error("Benchmark failed: {}", e)
+        runner.stop_event.set()
+        raise
+    finally:
+        runner.stop_event.set()
 
 
 def setup_proxy(proxy_conf: PathLike):

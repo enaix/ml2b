@@ -13,3 +13,4 @@ class Config(BaseModel):
     max_steps: int
     exp_name: str
     tool_timeout: float
+    time_limit: int

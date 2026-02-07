@@ -18,7 +18,8 @@ def get_llm_model(provider: Literal["openai", "vertex"], model: str, temperature
             model=model,
             credentials = credentials,
             project=user_credentials["project_id"],
-            temperature=0
+            temperature=temperature,
+            timeout=120
             )
     elif provider == "openai":
         base_url = os.environ.get("BASE_URL", None)
@@ -27,7 +28,8 @@ def get_llm_model(provider: Literal["openai", "vertex"], model: str, temperature
             model=model,
             base_url=base_url,
             temperature=temperature,
-            api_key=api_key
+            api_key=api_key,
+            timeout=120
         )
     else:
         raise ValueError(f"Unknown model provider: {provider}")

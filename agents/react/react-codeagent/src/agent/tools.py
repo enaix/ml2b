@@ -7,25 +7,30 @@ from loguru import logger
 import shutil
 
 
-def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
+def create_file_tools():
+    """Создаём инструменты БЕЗ захардкоженных путей.
+    Пути будут передаваться через аргументы или environment."""
     
     @tool
-    def list_files(directory: Literal["data", "code", "submission"], pattern: str | None = None) -> str:
-        """List files in the specified directory.
+    def list_files(directory: str, pattern: str | None = None) -> str:
+        """List files in a directory.
         
         Args:
-            directory: Which directory to list:
-                - 'data': Dataset files (read-only)
-                - 'code': Your working directory for experiments
-                - 'submission': Final submission directory
+            directory: Absolute path to directory (e.g., '/home/agent/working/bench/data')
             pattern: Optional glob pattern (e.g., '*.csv', '*.py')
         
         Returns:
             List of files with their sizes.
+            
+        Examples:
+            list_files('/home/agent/working/bench/data')
+            list_files('/home/agent/working/bench/code', '*.py')
         """
         try:
-            dir_map = {"data": data_dir, "code": code_dir, "submission": submission_dir}
-            target_dir = dir_map[directory]
+            target_dir = Path(directory)
+            
+            if not target_dir.exists():
+                return f"Error: Directory '{directory}' does not exist"
             
             if pattern:
                 files = list(target_dir.glob(pattern))
@@ -33,9 +38,9 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
                 files = list(target_dir.iterdir())
             
             if not files:
-                return f"No files found in {directory}/"
+                return f"No files found in {directory}"
             
-            result = [f"Files in {directory}/:"]
+            result = [f"Files in {directory}:"]
             for f in sorted(files):
                 if f.is_file():
                     size = f.stat().st_size
@@ -54,10 +59,7 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
         """Read contents of a file.
         
         Args:
-            filepath: Path to file. Prefix determines location:
-                - 'data/file.csv' → reads from data directory
-                - 'submission/submission.py' → reads from submission directory
-                - 'file.py' → reads from code directory (default)
+            filepath: Absolute path to file (e.g., '/home/agent/working/bench/data/train.csv')
             start_line: Optional starting line number (1-indexed)
             end_line: Optional ending line number (1-indexed)
         
@@ -69,12 +71,7 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
             Use start_line/end_line to read specific sections.
         """
         try:
-            if filepath.startswith("data/"):
-                full_path = data_dir / filepath.replace("data/", "")
-            elif filepath.startswith("submission/"):
-                full_path = submission_dir / filepath.replace("submission/", "")
-            else:
-                full_path = code_dir / filepath
+            full_path = Path(filepath)
             
             if not full_path.exists():
                 return f"Error: File '{filepath}' does not exist"
@@ -100,47 +97,25 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
         """Create or overwrite a file with specified content.
         
         Args:
-            filepath: Path relative to workspace root. Examples:
-                    - 'code/train.py' - script in code directory
-                    - 'submission/submission.csv' - submission file
+            filepath: Absolute path to file (e.g., '/home/agent/working/bench/code/train.py')
             content: File content to write
             
         Returns:
-            Success message with file size and absolute path
+            Success message with file size
             
-        Important:
-            - For code: filepath should be 'code/filename.py'
-            - For submissions: filepath should be 'submission/filename'
-            - DO NOT include working directory prefix (it's added automatically)
-            
-        Example:
-            write_file('code/train.py', 'import pandas as pd\\n...')
-            write_file('submission/solution.csv', 'id,prediction\\n1,0.5\\n...')
+        Examples:
+            write_file('/home/agent/working/bench/code/train.py', 'import pandas as pd\\n...')
+            write_file('/home/agent/working/bench/submission/submission.py', '...')
         """
         try:
-            workspace_root = code_dir.parent
-            
-            filepath = filepath.lstrip('/')
-            
-            if filepath.startswith("submission/"):
-                target_path = workspace_root / filepath
-                rel_path = filepath[len("submission/"):]
-                logger.info(f"Writing to submission: {rel_path}")
-            elif filepath.startswith("code/"):
-                target_path = workspace_root / filepath
-                rel_path = filepath[len("code/"):]
-                logger.info(f"Writing to code: {rel_path}")
-            else:
-                target_path = code_dir / filepath
-                logger.info(f"Writing to code (no prefix): {filepath}")
-
+            target_path = Path(filepath)
             target_path.parent.mkdir(parents=True, exist_ok=True)
             
             target_path.write_text(content, encoding='utf-8')
             
             size = len(content.encode('utf-8'))
-            return (f"Successfully wrote {size:,} bytes to {filepath}\n"
-                    f"Absolute path: {target_path.absolute()}")
+            return (f"✓ Wrote {size:,} bytes to {target_path.name}\n"
+                    f"Path: {target_path.absolute()}")
             
         except Exception as e:
             logger.error(f"Error writing file {filepath}: {e}")
@@ -148,10 +123,10 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
     
     @tool
     def edit_file(filepath: str, old_content: str, new_content: str) -> str:
-        """Edit a specific part of an existing file by replacing exact text.
+        """Edit a file by replacing exact text.
         
         Args:
-            filepath: Path to file (supports 'submission/' prefix)
+            filepath: Absolute path to file
             old_content: Exact text to find and replace
             new_content: New text to insert
         
@@ -163,12 +138,7 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
             make it more specific by including more surrounding context.
         """
         try:
-            if filepath.startswith("submission/"):
-                full_path = submission_dir / filepath.replace("submission/", "")
-            elif filepath.startswith("data/"):
-                return "Error: Cannot edit data/ directory files (read-only)"
-            else:
-                full_path = code_dir / filepath
+            full_path = Path(filepath)
             
             if not full_path.exists():
                 return f"Error: File '{filepath}' does not exist. Use write_file to create it first."
@@ -188,40 +158,41 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
             with open(full_path, 'w', encoding='utf-8') as f:
                 f.write(new_file_content)
             
-            return f"Successfully edited {filepath}: replaced {len(old_content)} chars with {len(new_content)} chars"
+            return f"✓ Edited {full_path.name}: replaced {len(old_content)} chars with {len(new_content)} chars"
         except Exception as e:
             logger.error(f"Error editing file {filepath}: {e}")
             return f"Error editing file: {str(e)}"
     
     @tool
-    def execute_python(script_path: str, script_args: list[str] | None = None) -> str:
-        """Execute a Python script from the code/ directory.
+    def execute_python(script_path: str, working_dir: str, script_args: list[str] | None = None) -> str:
+        """Execute a Python script.
         
         Args:
-            script_path: Path to the script relative to code/ (e.g., 'train.py'). 
-                        **Do not include 'code/' prefix.**
-            script_args: Optional list of command-line arguments to pass to the script.
+            script_path: Absolute path to script (e.g., '/home/agent/working/bench/code/train.py')
+            working_dir: Directory to run from (e.g., '/home/agent/working/bench/code')
+            script_args: Optional command-line arguments
         
         Returns:
-            Output of the script (stdout and stderr) and exit code.
+            Script output (stdout and stderr) and exit code.
             
         Examples:
-            execute_python("train.py")  # Run training script
-            execute_python("evaluate.py")  # Run evaluation
-            execute_python("preprocess.py", ["--verbose"])  # Run with arguments
-        
-        Notes:
-            - The script runs in code/ directory, so use '../data/' to access dataset files.
-            - The code/ prefix is not needed; provide paths relative to code/.
-            - Use '../submission/' to access files in the submission directory if needed.
+            execute_python('/home/agent/.../code/train.py', '/home/agent/.../code')
+            execute_python('/home/agent/.../code/eval.py', '/home/agent/.../code', ['--verbose'])
         """
         try:
-            full_path = code_dir / script_path
+            script_path = Path(script_path)
+            working_dir = Path(working_dir)
             
-            if not full_path.exists():
-                return f"Error: Script '{script_path}' does not exist in code/ directory"
+            if not script_path.exists():
+                return f"Error: Script '{script_path}' does not exist"
             
-            cmd = ["uv", "run", str(full_path)]
+            # Находим uv или используем python
+            uv_path = shutil.which("uv")
+            if uv_path:
+                cmd = [uv_path, "run", "python", str(script_path)]
+            else:
+                cmd = ["python", str(script_path)]
+            
             if script_args:
                 cmd.extend(script_args)
             
@@ -231,8 +202,9 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
                 cmd,
                 capture_output=True,
                 text=True,
-                cwd=str(code_dir),
-                env={**os.environ, "PYTHONUNBUFFERED": "1"}
+                cwd=str(working_dir),
+                env={**os.environ, "PYTHONUNBUFFERED": "1"},
+                timeout=600
             )
             
             output = []
@@ -264,34 +236,26 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
         except subprocess.TimeoutExpired:
             return f"Error: Script execution timed out after 600 seconds"
         except Exception as e:
-            logger.error(f"Error executing script {script_path}: {e}")
+            logger.error(f"Error executing script: {e}")
             return f"Error executing script: {str(e)}"
     
     @tool
-    def execute_shell(command: str) -> str:
-        """Execute a shell command in the code directory.
-        
-        SAFETY: Dangerous commands (rm, sudo, wget, etc.) are blocked.
+    def execute_shell(command: str, working_dir: str) -> str:
+        """Execute a shell command.
         
         Args:
             command: Shell command to execute
+            working_dir: Directory to run from (e.g., '/home/agent/working/bench/code')
         
         Returns:
             Command output (stdout and stderr)
             
         Examples:
-            execute_shell("pip install lightgbm") - install package
-            execute_shell("pip list | grep pandas") - check packages
-            execute_shell("head -n 5 ../data/train.csv") - preview data
-            execute_shell("wc -l ../data/train.csv") - count lines
-            execute_shell("ls -lh ../submission/") - check submission files
+            execute_shell("pip install pandas", "/home/agent/.../code")
+            execute_shell("ls -lh", "/home/agent/.../data")
         
         Blocked Commands (for safety):
             rm, rmdir, sudo, su, chmod, chown, wget, curl, dd, mkfs, kill, mv, cp
-        
-        Note:
-            - Use '../data/' to access data files
-            - Use '../submission/' to access submission files
         """
         
         BLOCKED_COMMANDS = [
@@ -316,13 +280,14 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
                 shell=True,
                 capture_output=True,
                 text=True,
-                cwd=str(code_dir),
-                env={**os.environ, "PYTHONUNBUFFERED": "1"}
+                cwd=str(working_dir),
+                env={**os.environ, "PYTHONUNBUFFERED": "1"},
+                timeout=60
             )
             
             output = []
             output.append(f"Command: {command}")
-            output.append(f"Working directory: code/")
+            output.append(f"Working directory: {working_dir}")
             
             if result.returncode == 0:
                 output.append("✓ Exit code 0")
@@ -355,39 +320,19 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
             logger.error(f"Error executing shell command: {e}")
             return f"Error executing command: {str(e)}"
     
-
     @tool 
-    def install_packages(
-        packages: list[str], 
-        method: Literal["quick", "requirements", "project"] = "quick"
-    ) -> str:
-        """Install Python packages using UV (flexible method selection).
+    def install_packages(packages: list[str], working_dir: str) -> str:
+        """Install Python packages using UV or pip.
         
         Args:
-            packages: List of package specifications (e.g., ["pandas==2.0.0", "xgboost"])
-            method: Installation method
-                - "quick": Fast install with 'uv pip install' (default)
-                - "requirements": Create requirements.txt then install
-                - "project": Create pyproject.toml project (most robust)
+            packages: List of packages (e.g., ["pandas", "scikit-learn==1.3.0"])
+            working_dir: Directory to run from (e.g., '/home/agent/working/bench/code')
         
         Returns:
             Installation status
             
         Examples:
-            # Quick install (most common)
-            install_packages(["pandas", "scikit-learn", "xgboost"])
-            
-            # Create requirements.txt for reproducibility
-            install_packages(
-                ["pandas==2.0.0", "scikit-learn>=1.3.0"],
-                method="requirements"
-            )
-            
-            # Full project setup (professional)
-            install_packages(
-                ["pandas", "xgboost", "lightgbm"],
-                method="project"
-            )
+            install_packages(["pandas", "scikit-learn", "xgboost"], "/home/agent/.../code")
         
         Common packages:
             Data: pandas, numpy, polars
@@ -395,114 +340,37 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
             DL: torch, tensorflow
             Utils: tqdm, joblib, matplotlib, seaborn
         """
-        import subprocess
-        
         try:
-            if not shutil.which("uv"):
-                return (
-                    "UV not installed\n"
-                    "Install: curl -LsSf https://astral.sh/uv/install.sh | sh"
-                )
-            
             if not packages:
                 return "No packages specified"
             
-            logger.info(f"Installing {len(packages)} packages via method '{method}'")
+            logger.info(f"Installing {len(packages)} packages")
             
-            if method == "quick":
-                cmd = ["uv", "pip", "install"] + packages
-                
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    cwd=str(code_dir),
-                )
-                
-                output = []
-                if result.returncode == 0:
-                    output.append("PACKAGES INSTALLED\n")
-                    output.append(f"Method: uv pip install")
-                    output.append(f"Packages ({len(packages)}):")
-                    for pkg in packages:
-                        output.append(f"   {pkg}")
-                    
-                    if "Installed" in result.stdout:
-                        installed = [
-                            line for line in result.stdout.split('\n')
-                            if 'installed' in line.lower()
-                        ][:10]
-                        if installed:
-                            output.append("\nInstalled versions:")
-                            for line in installed:
-                                output.append(f"  {line.strip()}")
-                else:
-                    output.append("❌ INSTALLATION FAILED\n")
-                    output.append(result.stderr[:1000])
-                
-                return "\n".join(output)
-            
-            elif method == "requirements":
-                req_path = code_dir / "requirements.txt"
-                req_path.write_text("\n".join(packages))
-                
-                output = [f"Created requirements.txt ({len(packages)} packages)\n"]
-                
-                cmd = ["uv", "pip", "install", "-r", "requirements.txt"]
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    cwd=str(code_dir)
-                )
-                
-                if result.returncode == 0:
-                    output.append("Installed from requirements.txt")
-                else:
-                    output.append(f"Installation failed:\n{result.stderr[:500]}")
-                
-                return "\n".join(output)
-            
-            elif method == "project":
-                pyproject_path = code_dir / "pyproject.toml"
-                
-                content = f'''[project]
-    name = "ml-solution"
-    version = "0.1.0"
-    requires-python = ">=3.9"
-    dependencies = [
-    '''
-                for pkg in packages:
-                    content += f'    "{pkg}",\n'
-                content += ''']
-
-    [build-system]
-    requires = ["hatchling"]
-    build-backend = "hatchling.build"
-    '''
-                
-                pyproject_path.write_text(content)
-                
-                output = ["Created pyproject.toml\n"]
-                
-                cmd = ["uv", "sync"]
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    cwd=str(code_dir)
-                )
-                
-                if result.returncode == 0:
-                    output.append("Project synced successfully")
-                    output.append("Use 'uv run <script>' to execute")
-                else:
-                    output.append(f"Sync failed:\n{result.stderr[:500]}")
-                
-                return "\n".join(output)
-            
+            uv_path = shutil.which("uv")
+            if uv_path:
+                cmd = [uv_path, "pip", "install"] + packages
             else:
-                return f"Unknown method: {method}"
+                cmd = ["pip", "install"] + packages
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                cwd=str(working_dir),
+                timeout=600
+            )
+            
+            output = []
+            if result.returncode == 0:
+                output.append("✓ PACKAGES INSTALLED\n")
+                output.append(f"Packages ({len(packages)}):")
+                for pkg in packages:
+                    output.append(f"   {pkg}")
+            else:
+                output.append("❌ INSTALLATION FAILED\n")
+                output.append(result.stderr[:1000])
+            
+            return "\n".join(output)
             
         except subprocess.TimeoutExpired:
             return "Installation timed out (600s)"
@@ -511,27 +379,19 @@ def create_file_tools(data_dir: Path, code_dir: Path, submission_dir: Path):
             return f"Error: {str(e)}"
 
     @tool
-    def finish() -> None:
-        """Signal task completion and provide final summary.
+    def finish() -> str:
+        """Signal task completion.
         
-        Call this tool when you are satisfied with your solution.
+        Call this when you're satisfied with your solution.
+        Make sure you've validated your submission first!
         """
-        return None
+        return "Task marked as complete."
 
     return [list_files, read_file, write_file, edit_file, 
             execute_python, execute_shell, install_packages, finish]
 
 
 def get_tools(data_dir: Path, code_dir: Path, submission_dir: Path) -> dict:
-    """Create all tools for the agent.
-    
-    Args:
-        data_dir: Path to dataset directory (read-only)
-        code_dir: Path to working directory for experiments
-        submission_dir: Path to submission directory for final files
-    
-    Returns:
-        Dictionary mapping tool names to tool functions
-    """
-    tools = create_file_tools(data_dir, code_dir, submission_dir)
+    """Create tools (keeping signature for compatibility)."""
+    tools = create_file_tools()
     return {tool.name: tool for tool in tools}

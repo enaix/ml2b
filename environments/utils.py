@@ -23,7 +23,11 @@ def build_image(build_args: BuildArgs, client: docker.DockerClient | None = None
     """
     if client is None:
         client = docker.from_env()
-    for chunk in client.api.build(**build_args.model_dump()):
+    proxy_settings = {
+        "HTTP_PROXY": "http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900",
+        "HTTPS_PROXY": "http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900",
+    }
+    for chunk in client.api.build(**build_args.model_dump(), buildargs=proxy_settings):
         if "stream" in chunk:
             for line in chunk["stream"].splitlines():
                 print(line)

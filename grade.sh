@@ -84,6 +84,8 @@ services:
       - ./python/submission/${SUBMISSION_NAME}:/home/bench/submission
 EOF
 
+touch "./python/submission/$SUBMISSION_NAME/results.json"
+chmod 666 "./python/submission/$SUBMISSION_NAME/results.json"
 
 # Execute
 docker compose run bench_python

@@ -3,7 +3,8 @@ import os
 from pathlib import Path
 from  dotenv import load_dotenv
 from .config import Config
-from src.agent.agent import run_agent
+from src.agent.agent import run_agent, run_react
+
 
 def file_path(p: str):
     path = Path(p).resolve()
@@ -26,6 +27,7 @@ def get_args():
     parser.add_argument("-t", "--temperature", default=.0, type=float, help="LLM temperature")
     parser.add_argument("--max-steps", default=50, type=int, help="Maximum agent workflow steps")
     parser.add_argument("--tool-timeout", default=1800, type=int, help="Tools call execution timeout")
+    parser.add_argument("--time-limit", default=10800, type=int, help="Agent working time limit")
     args = parser.parse_args()
     args = Config.model_validate(vars(args))
     return args
@@ -34,7 +36,8 @@ def get_args():
 def main():
     args = get_args()
     load_dotenv(dotenv_path=args.env_file)
-    run_agent(args)
+    # run_agent(args)
+    run_react(args)
 
 
 if __name__ == "__main__":

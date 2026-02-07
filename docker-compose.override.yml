@@ -1,0 +1,4 @@
+services:
+  bench_python:
+    volumes:
+      - ./python/submission/submission_multi-label-classification-competition-2025-Polish-python-only_code:/home/bench/submission

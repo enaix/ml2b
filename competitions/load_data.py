@@ -65,6 +65,7 @@ sheets = {
     "0": "Turkish.csv",
     "751010443": "Russian.csv",
     "11714048": "French.csv",
+    "644530670": "Ukranian.csv"
 }
 
 
