@@ -23,6 +23,8 @@ Install `uv` once, then run `uv sync` (or `uv pip install -r requirements.txt`) 
 3. Build the agent runtime:
    ```bash
    python run.py build-runtime -i aide --agent-dir agents/aide
+   # for arm platforms use 
+   python run.py build-runtime -i react --agent-dir agents/react --platform "linux/arm64"
    ```
    *(If you use another agent, keep the same file structure and command. See `python run.py build-runtime --help` for details.)*
 4. Download and prepare the dataset:
@@ -54,4 +56,6 @@ After these steps, you should see the following structure:
 2. Run the benchmark (see `python run.py bench --help` for more options):
    ```bash
    python run.py bench -i aide -w 3 --agent-dir agents/aide --seed 42 --args-variant extended --code-variant extended
+
+   python run.py bench -i aide -w 1 --agent-dir agents/react --seed 42 --args-variant extended --code-variant extended
    ```

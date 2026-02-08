@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 class BuildArgs(BaseModel):
     """
-    Base spec model for docker image
+    Docker image spec
     """
     dockerfile: str | Path
     platform: str
@@ -14,19 +14,16 @@ class BuildArgs(BaseModel):
     tag: str
 
 
-def build_image(build_args: BuildArgs, client: docker.DockerClient | None = None) -> None:
-    """
-    Build image from spec
+def build_image(build_args: BuildArgs, client: docker.DockerClient | None = None, proxy_settings: dict[str, str] | None = None) -> None:
+    """Build image from spec
 
     Args:
-        build_args (BuildArgs): image spec
+        build_args (BuildArgs): Image spec
+        client (docker.DockerClient | None, optional): Docker client. Defaults to None.
+        proxy_settings (dict[str, str] | None, optional): Proxy container build settings. Defaults to None.
     """
     if client is None:
         client = docker.from_env()
-    proxy_settings = {
-        "HTTP_PROXY": "http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900",
-        "HTTPS_PROXY": "http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900",
-    }
     for chunk in client.api.build(**build_args.model_dump(), buildargs=proxy_settings):
         if "stream" in chunk:
             for line in chunk["stream"].splitlines():

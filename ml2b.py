@@ -46,10 +46,26 @@ DEFAULT_COMPETITIONS_PATH = BASE_PATH / "competitions"
     default="linux/amd64",
     help="Target container arch"
 )
-def build_runtime(image_name: str, agent_dir: Path, platform: str) -> None:
+@click.option(
+    '--http-proxy',
+    type=click.STRING,
+    default=None,
+    help="HTTP proxy for container build"
+)
+@click.option(
+    '--https-proxy',
+    type=click.STRING,
+    default=None,
+    help="Https proxy for container build"
+)
+def build_runtime(image_name: str, agent_dir: Path, platform: str, http_proxy: str, https_proxy: str) -> None:
     """
     Build base runtime and agent images
     """
+    proxy_settings = {}
+    if http_proxy or https_proxy:
+        proxy_settings["HTTP_PROXY"] = http_proxy or https_proxy
+        proxy_settings["HTTPS_PROXY"] = https_proxy or http_proxy
     client = docker.from_env()
     build_args = BuildArgs(
         tag=image_name, 
@@ -61,9 +77,9 @@ def build_runtime(image_name: str, agent_dir: Path, platform: str) -> None:
         tag=DEFAULT_TAG,
         dockerfile=DEFAULT_RUNTIME_PATH / "Dockerfile",
         platform=platform
-    ), client)
+    ), client, proxy_settings)
     if DEFAULT_TAG != image_name:
-        build_image(build_args, client)
+        build_image(build_args, client, proxy_settings)
 
 
 @cli.command()

@@ -5,7 +5,7 @@ default_kwargs: &default_kwargs
   exp-name: bench
   max-steps: 100
   time-limit: 10800
-  tool-timeout: 600
+  tool-timeout: 3600
 
 kwargs_type: argparse
 start: react/start.sh
