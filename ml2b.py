@@ -11,12 +11,7 @@ import click
 import docker
 import time
 from competitions import load_data
-import sys
 
-
-@click.group()
-def cli():
-    pass
 
 DEFAULT_TAG = "runtime-env"
 BASE_PATH = Path(__file__).parent
@@ -26,61 +21,10 @@ DEFAULT_DATA_PATH = BASE_PATH / "competitions" / "data"
 DEFAULT_LOGS_PATH = BASE_PATH / "logs"
 DEFAULT_COMPETITIONS_PATH = BASE_PATH / "competitions"
 
-@cli.command()
-@click.option(
-    "-i", 
-    "--image-name", 
-    type=click.STRING, 
-    default=DEFAULT_TAG,
-    help="Target container name, usualy same as agent name"
-    )
-@click.option(
-    '--agent-dir',
-    type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path),
-    default=DEFAULT_RUNTIME_PATH,
-    help="Agent directory"
-)
-@click.option(
-    '--platform',
-    type=click.STRING,
-    default="linux/amd64",
-    help="Target container arch"
-)
-@click.option(
-    '--http-proxy',
-    type=click.STRING,
-    default=None,
-    help="HTTP proxy for container build"
-)
-@click.option(
-    '--https-proxy',
-    type=click.STRING,
-    default=None,
-    help="Https proxy for container build"
-)
-def build_runtime(image_name: str, agent_dir: Path, platform: str, http_proxy: str, https_proxy: str) -> None:
-    """
-    Build base runtime and agent images
-    """
-    proxy_settings = {}
-    if http_proxy or https_proxy:
-        proxy_settings["HTTP_PROXY"] = http_proxy or https_proxy
-        proxy_settings["HTTPS_PROXY"] = https_proxy or http_proxy
-    client = docker.from_env()
-    build_args = BuildArgs(
-        tag=image_name, 
-        dockerfile="Dockerfile", 
-        platform=platform,
-        path=str(agent_dir)
-    )
-    build_image(BuildArgs(
-        tag=DEFAULT_TAG,
-        dockerfile=DEFAULT_RUNTIME_PATH / "Dockerfile",
-        platform=platform
-    ), client, proxy_settings)
-    if DEFAULT_TAG != image_name:
-        build_image(build_args, client, proxy_settings)
 
+@click.group()
+def cli():
+    pass
 
 @cli.command()
 @click.option(
@@ -205,18 +149,102 @@ def bench(image_name: str, workers: int, data_dir: Path,
 
 
 @cli.command()
+@click.option(
+    "-i", 
+    "--image-name", 
+    type=click.STRING, 
+    default=DEFAULT_TAG,
+    help="Target container name, usualy same as agent name"
+    )
+@click.option(
+    '--agent-dir',
+    type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path),
+    default=DEFAULT_RUNTIME_PATH,
+    help="Agent directory"
+)
+@click.option(
+    '--platform',
+    type=click.STRING,
+    default="linux/amd64",
+    help="Target container arch"
+)
+@click.option(
+    '--http-proxy',
+    type=click.STRING,
+    default=None,
+    help="HTTP proxy for container build"
+)
+@click.option(
+    '--https-proxy',
+    type=click.STRING,
+    default=None,
+    help="Https proxy for container build"
+)
+def build_runtime(image_name: str, agent_dir: Path, platform: str, http_proxy: str, https_proxy: str) -> None:
+    """
+    Build base runtime and agent images
+    """
+    proxy_settings = {}
+    if http_proxy or https_proxy:
+        proxy_settings["HTTP_PROXY"] = http_proxy or https_proxy
+        proxy_settings["HTTPS_PROXY"] = https_proxy or http_proxy
+    client = docker.from_env()
+    build_args = BuildArgs(
+        tag=image_name, 
+        dockerfile="Dockerfile", 
+        platform=platform,
+        path=str(agent_dir)
+    )
+    build_image(BuildArgs(
+        tag=DEFAULT_TAG,
+        dockerfile=DEFAULT_RUNTIME_PATH / "Dockerfile",
+        platform=platform
+    ), client, proxy_settings)
+    if DEFAULT_TAG != image_name:
+        build_image(build_args, client, proxy_settings)
+
+
+HF_DATASET = "enaix/ml2b"
+HF_TASKS_DIR = "tasks"
+HF_DATA_DIR = "data"
+
+@cli.command()
+@click.option(
+    "--source",
+    type=click.Choice(["huggingface"]),
+    default="huggingface",
+    help="Dataset source"
+)
 @click.option("--remove-cache", is_flag=True, help="Remove huggingface hub cache to save space")
-@click.argument('source')
-def prepare_data(remove_cache: bool, source: str):
+@click.option(
+    "--data-dir",
+    type=click.Path(path_type=Path),
+    default=DEFAULT_COMPETITIONS_PATH,
+    help="Competitions path"
+)
+@click.option(
+    "--hf-dataset",
+    type=click.STRING,
+    default=HF_DATASET,
+    help="Huggingface dataset name"
+)
+@click.option(
+    "--hf-tasks-dir",
+    type=click.STRING,
+    default=HF_TASKS_DIR,
+    help="Tasks dir in hf store"
+)
+@click.option(
+    "--hf-data-dir",
+    type=click.STRING,
+    default=HF_DATA_DIR,
+    help="Data dir in hf store"
+)
+def prepare_data(remove_cache: bool, source: str, data_dir: Path, hf_dataset: str, hf_tasks_dir: str, hf_data_dir: str):
     """
     Prepare data for benchmark run
     """
-    source_options = ["gdrive", "huggingface"]
-    if source not in source_options:
-        print("Source must be one of:", str(source_options))
-        sys.exit(1)
-
-    load_data(source, remove_cache)
+    load_data(data_dir, hf_dataset, hf_tasks_dir, hf_data_dir, source, remove_cache)
 
 
 if __name__ == "__main__":

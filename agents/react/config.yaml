@@ -14,8 +14,8 @@ kwargs:
   model: openai/gpt-oss-120b
 env_vars:
   TIME_LIMIT_SECS: 10800 
-  http_proxy: http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900
-  https_proxy: http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900
+  # http_proxy: *
+  # https_proxy: *
   API_KEY: ${{ secrets.API_KEY }}
   BASE_URL: ${{ secrets.BASE_URL }}
   # VERTEX=true #use vertex models

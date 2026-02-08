@@ -21,6 +21,4 @@ dependencies = [
     "scikit-learn==1.7.1",
     "typer==0.16.1",
     "huggingface_hub==0.35.3",
-    "langchain>=1.2.9",
-    "langgraph>=1.0.8",
 ]
