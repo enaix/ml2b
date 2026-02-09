@@ -64,6 +64,8 @@ After completing the preparation steps, you should see the following folder stru
 3. Run the benchmark (see `python ml2b.py bench --help` for more options):
 ```bash
    python ml2b.py bench -i aide -w 3 --agent-dir agents/aide --seed 42 --args-variant extended --code-variant extended
-
-   python ml2b.py bench -i react -w 1 --agent-dir agents/react --seed 42 --args-variant extended --code-variant extended
 ```
+
+### Documentation
+
+General documentation can be found in [docs](docs/)
