@@ -231,7 +231,8 @@ class CSVDataSplitter(DataSplitter):
         exclude_cols = sorted(list(set(comp.metadata.get("exclude_cols", [])).union(
             set([comp.metadata[field] for field in COL_NAMES_TO_EXCLUDE if comp.metadata.get(field) is not None])
         )))
-        drop_cols_X = exclude_cols + [target_col]
+        # drop_cols_X = exclude_cols + [target_col]
+        drop_cols_X = [target_col]
 
         # Split data using the provided indices
         X, y = train_df.drop(columns=drop_cols_X), train_df[target_col]
@@ -248,6 +249,7 @@ class CSVDataSplitter(DataSplitter):
         train_path.mkdir(exist_ok=True, parents=True)
         val_path = Path(private_dir) / f"fold_{fold_idx}"
         val_path.mkdir(exist_ok=True, parents=True)
+
         # Save extra cols
         if exclude_cols:
             additional_files["excluded_cols_train"] = train_path / "excluded_cols_train.csv"
@@ -258,7 +260,6 @@ class CSVDataSplitter(DataSplitter):
         train_fold.to_csv(train_path / "train.csv", index=False)
         X_val.to_csv(val_path / "X_val.csv", index=False)
         y_val.to_csv(val_path / "y_val.csv", index=False)
-
         return train_path, val_path, additional_files
 
 

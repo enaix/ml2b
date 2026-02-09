@@ -3,21 +3,21 @@
         "metric": "roc_auc_score",
         "target_col": "hospital_death",
         "direction": "maximize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "probabilities for class 1 (floats in [0, 1])"
     },
     "ieor-242-nyc-taxi": {
         "metric": "root_mean_squared_error",
         "target_col": "duration",
         "direction": "minimize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "predicted durations (floats >= 0)"
     },
     "explicit-content-detection": {
         "metric": "f1_score",
         "target_col": "target",
         "direction": "maximize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "binary predictions (0 or 1)"
     },
     "emnist-handwritten-chars": {
@@ -43,21 +43,21 @@
         "metric": "roc_auc_score",
         "target_col": "Revenue",
         "direction": "maximize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "probabilities for class 1 (floats in [0, 1])"
     },
     "financial-engineering-1": {
         "metric": "mean_squared_error",
         "target_col": "col_5",
         "direction": "minimize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "predicted values for col_5 (floats)"
     },
     "financial-engineering-2": {
         "metric": "root_mean_squared_error",
         "target_col": "col_5",
         "direction": "minimize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "predicted values for col_5 (floats)",
         "split_strategy": "csv",
         "grader": "default"
@@ -119,7 +119,7 @@
         "metric": "root_mean_squared_error",
         "target_col": "Unique Headcount",
         "direction": "minimize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "integer counts >= 0"
     },
     "ml2021spring-hw1": {
@@ -143,35 +143,35 @@
         "metric": "accuracy_score",
         "target_col": "label",
         "direction": "maximize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "class labels (integers)"
     },
     "google-brain-ventilator": {
         "metric": "mean_absolute_error",
         "target_col": "pressure",
         "direction": "minimize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "predicted pressure values (floats, in cmH2O)"
     },
    "porto-seguro-challenge": {
         "metric": "f1_score",
         "target_col": "y",
         "direction": "maximize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "binary predictions (0 or 1)"
     },
     "crime-learn": {
         "metric": "root_mean_squared_error",
         "target_col": "ViolentCrimesPerPop",
         "direction": "minimize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "predicted crime rates (floats >= 0)"
     },
     "stroke-prediction-s3e2": {
         "metric": "roc_auc_score",
         "target_col": "stroke",
         "direction": "maximize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "probabilities for class 1 (floats in [0, 1])"
     },
     "playground-series-s5e6": {
@@ -321,7 +321,7 @@
         "metric": "roc_auc_score",
         "target_col": "rainfall",
         "direction": "maximize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "predict a probability for the target rainfall",
         "files": {
             "train": {"type": "data", "required": true, "extensions": [".csv"]}
@@ -337,7 +337,7 @@
         "metric": "accuracy_score",
         "target_col": "quality",
         "direction": "maximize",
-        "cv_folds": 1,
+        "cv_folds": 3,
         "output_hint": "predict a quality score (int in [1, 10])",
         "files": {
             "train": {"type": "data", "required": true, "extensions": [".csv"]}
@@ -348,21 +348,6 @@
         "split_strategy": "csv",
 		"load_strategy": "default",
         "grader": "default"
-    },
-    "alfa-university-income-prediction": {
-        "metric": "wmae",
-        "target_col": "target",
-        "exclude_cols": ["w"],
-        "weight_col": "w",
-        "direction": "minimize",
-        "cv_folds": 1,
-        "files": {
-            "train": {"type": "data", "required": true, "extensions": [".csv"]}
-        },
-        "file_mapping": {
-            "train": {"filename": "train_clean.csv", "type": "data", "required": true}
-        },
-        "output_hint": "predicted values for target (floats)"
     },
 	"multi-label-classification-competition-2025": {
 	    "metric": "fbeta_score_micro",
@@ -380,24 +365,5 @@
 	    "split_strategy": "photo_classification",
 	    "load_strategy": "photo_classification",
 	    "grader": "photo_classification"
-	},
-    "sheep-classification-challenge-2025": {
-        "metric": "f1_score",
-        "target_col": "label",
-        "direction": "maximize",
-        "cv_folds": 1,
-        "output_hint": "predict the label of the correct date type (string)",
-        "files": {
-            "train": {"type": "data", "required": true, "extensions": [".csv"]}
-        },
-        "file_mapping": {
-            "train": {"filename": "train_labels.csv", "type": "data", "required": true}
-        },
-        "split_strategy": "sheep_classification",
-        "load_strategy": "sheep_classification",
-        "grader": "sheep_classification",
-        "stratified_split": true,
-        "image_col": "filename",
-        "image_dir": "train"
-    }
+	}
 }

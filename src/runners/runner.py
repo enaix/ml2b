@@ -217,7 +217,7 @@ class DockerRunner:
         else:
             raise ValueError("Not the right kwargs type, use (omegaconf/argparse)")
         logger.info("Run command: {}", command)
-        exit_code, output = container.exec_run(command, stream=True, user="nonroot")
+        exit_code, output = container.exec_run(command, stream=True, user="root")
         for chunk in output:
             logger.info("[yellow]Container log {}[/yellow]\n {}", task.unique_name,  chunk.decode('utf-8').strip())
 

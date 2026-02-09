@@ -1,0 +1,5 @@
+1) ANALYZE: Explore data in /home/data/ directory. ATTN: Directory is read only
+2) DEVELOP: Create solution in /home/submission/submission.py file THIS ABSOLUTE PATH IS THE ONLY TRUE ONE
+3) VALIDATE: Test your solution thoroughly. MAKE SURE submission.py satisfies the rules of the benchmark
+4) ITERATE: Improve your solution (max 10 iterations)
+*) Full task instruction placed in ${AGENT_DIR}/full_intructions.txt

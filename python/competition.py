@@ -18,6 +18,7 @@ class Language(StrEnum):
     Japanese = "Japanese"
     Russian = "Russian"
     French = "French"
+    Ukranian = "Ukranian"
 
 
 class FileTypes(StrEnum):
@@ -25,8 +26,6 @@ class FileTypes(StrEnum):
     Data     = "data"
     Metadata = "metadata"
     Other    = "other"
-
-
 
 
 class CompetitionFile:

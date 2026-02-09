@@ -248,7 +248,7 @@ class BenchPipeline:
                 (Path(self.base_path()) / "competitions").resolve().as_posix(): {'bind': '/home/bench/competitions', 'mode': 'ro'}
             },
             network=network_name,
-            entrypoint=["mamba", "run", "-n", "agent", "python", "python/bench.py"],
+            entrypoint=["python", "python/bench.py"],
             **runtime_config,
             working_dir="/home/bench",
             user="root"

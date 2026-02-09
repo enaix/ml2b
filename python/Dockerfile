@@ -31,5 +31,6 @@ ENV PYTHONPATH="/home/bench"
 #RUN mkdir data # it should be readonly
 #RUN chown bench:bench submission # submission code can read/write to this dir
 #RUN touch submission/__init__.py # should be readonly
-
+RUN mkdir -p submission && chown -R bench:bench submission
+USER bench
 CMD [ "python", "python/bench.py" ]

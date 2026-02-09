@@ -18,9 +18,9 @@ kwargs:
   agent.feedback.model: openai/gpt-oss-120b:exacto
   report.model: openai/gpt-oss-120b:exacto
 env_vars:
-  TIME_LIMIT_SECS: 10800 #time in seconds
-  http_proxy: http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900
-  https_proxy: http://4VycCrzHCd:pIU9pvdGwW@37.252.6.53:32900
+  TIME_LIMIT_SECS: 10800
+  # http_proxy: *
+  # https_proxy: *
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} #export OPENAI_API_KEY on host
   # OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }} #export OPENAI_BASE_URL on host for custom openai compatible api
   # VERTEX=true #use vertex models

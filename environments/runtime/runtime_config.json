@@ -1,5 +1,5 @@
 {
     "mem_limit": "16g",
     "nano_cpus": 4e9,
-    "gpus": 1
+    "gpus": 0
 }

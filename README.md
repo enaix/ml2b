@@ -1,6 +1,6 @@
 # ML2B
 
-This repository provides the implementation accompanying the paper *“MULTI-LINGUAL ML BENCHMARK FOR AUTOML”*.  
+This repository provides the implementation accompanying the paper *"MULTI-LINGUAL ML BENCHMARK FOR AUTOML"*.  
 It includes the code for dataset construction, the evaluation framework, and the agents assessed within this benchmark.
 
 ## Usage
@@ -13,33 +13,38 @@ Install `uv` once, then run `uv sync` (or `uv pip install -r requirements.txt`) 
 ### Prepare Environment
 
 1. Install dependencies:
-   ```bash
+```bash
    uv sync
-   ```
+```
+
 2. Activate the virtual environment:
-   ```bash
+```bash
    source .venv/bin/activate
-   ```
+```
+
 3. Build the agent runtime:
-   ```bash
-   python run.py build-runtime -i aide --agent-dir agents/aide
-   ```
-   *(If you use another agent, keep the same file structure and command. See `python run.py build-runtime --help` for details.)*
-4. Download and prepare the dataset:
-   ```bash
-   python run.py prepare-data huggingface    # preferred way, you may delete the cache by passing the --remove-cache option
-   # OR
-   python run.py prepare-data gdrive
-   ```
-   *(The dataset can also be downloaded manually from the [hugginface hub](https://huggingface.co/datasets/enaix/ml2b) and placing the `data`,`tasks` directories into `competitions`)*
+```bash
+   python ml2b.py build-runtime -i aide --agent-dir agents/aide
+
+   # For ARM platforms use:
+   python ml2b.py build-runtime -i react --agent-dir agents/react --platform "linux/arm64"
+```
+   *(If you use another agent, maintain the same file structure and command pattern.)*
    
-   *(If you wish to download from GDrive and encounter an error with `gdown`, manually download the data from [Google Drive](https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf). You would also need to download task descriptions manually)*
+   For proxy settings, see `python ml2b.py build-runtime --help` for details.
 
-After these steps, you should see the following structure:
+4. Download and prepare the dataset:
+```bash
+   python ml2b.py prepare-data
+```
+   *(The dataset can also be downloaded manually from [Hugging Face Hub](https://huggingface.co/datasets/enaix/ml2b) by placing the `data` and `tasks` directories into `competitions`.)*
 
+   For customization details, see [dataset implementation documentation](/competitions/README.md).
+
+After completing the preparation steps, you should see the following folder structure:
 ```
 .
-├── run.py
+├── ml2b.py
 └── competitions/
     ├── data/
     ├── competitions.json
@@ -48,13 +53,18 @@ After these steps, you should see the following structure:
 
 ### Running the Benchmark
 
-1. Configure agent parameters in the corresponding directory (e.g. `agents/aide/config.yaml`).  
-   Make sure environment variables such as `$OPENAI_API_KEY` are exported in your shell.
+1. Configure agent parameters in the corresponding directory (e.g., `agents/aide/config.yaml`).  
 
-2. Run the benchmark (see `python run.py bench --help` for more options):
-   ```bash
-   python run.py bench -i aide -w 3 --agent-dir agents/aide --seed 42 --args-variant extended --code-variant extended
-   ```
+   Ensure necessary environment variables such as `OPENAI_API_KEY` are exported in your shell.
+
+2. Configure Docker runtime limitations in [runtime_config.json](/environments/runtime/runtime_config.json).
+
+   **Optional:** You may change proxy settings for the validation container in [squid.conf](/environments/runtime/squid.conf).
+
+3. Run the benchmark (see `python ml2b.py bench --help` for more options):
+```bash
+   python ml2b.py bench -i aide -w 3 --agent-dir agents/aide --seed 42 --args-variant extended --code-variant extended
+```
 
 ### Documentation
 

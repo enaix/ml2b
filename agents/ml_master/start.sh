@@ -1,9 +1,7 @@
 #!/bin/bash
-set -x # Print commands and their arguments as they are executed
+set -x
 
 cd ${AGENT_DIR}
-eval "$(conda shell.bash hook)"
-conda activate agent
 MEMORY_INDEX=0
 start_cpu=0
 CPUS_PER_TASK=32
