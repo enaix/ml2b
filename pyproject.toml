@@ -1,5 +1,5 @@
 [project]
-name = "mlbench-infra"
+name = "ml2b"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

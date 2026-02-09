@@ -1,0 +1,24 @@
+[project]
+name = "react-codeagent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google>=3.0.0",
+    "google-api-python-client>=2.188.0",
+    "google-auth>=2.47.0",
+    "google-auth-oauthlib>=1.2.4",
+    "langchain>=1.2.1",
+    "langchain-google-genai>=4.2.0",
+    "langchain-openai>=1.1.7",
+    "langgraph>=1.0.5",
+    "langgraph-cli[inmem]>=0.4.11",
+    "lightgbm>=4.6.0",
+    "loguru>=0.7.3",
+    "numpy>=2.4.1",
+    "pydantic>=2.12.5",
+    "python-dotenv>=1.2.1",
+    "scikit-learn>=1.8.0",
+    "torch>=2.10.0",
+]

@@ -9,6 +9,8 @@ from functools import partial
 from collections import defaultdict
 from typing import Any
 import traceback
+import docker
+from os import PathLike
 
 def merge_results(results: dict, result: dict, idx: int):
     for field in result.keys():
@@ -97,8 +99,74 @@ async def execute_bench(runner_spec: RunnerSpec):
     base_path = Path(__file__).resolve().absolute().parent.parent
     runner = DockerRunner(runner_spec)
     bench = BenchPipeline(base_path, runner_spec.folds, runner.input_mode == RunnerInput.DescAndData)
-    asyncio.create_task(feed_competitions(bench, runner))
-    await runner.run()
+    
+    feed_task = asyncio.create_task(feed_competitions(bench, runner))
+    run_task = asyncio.create_task(runner.run())
+    
+    try:
+        await asyncio.gather(feed_task, run_task, return_exceptions=True)
+    except Exception as e:
+        logger.error("Benchmark failed: {}", e)
+        runner.stop_event.set()
+        raise
+    finally:
+        runner.stop_event.set()
+
+
+def setup_proxy(proxy_conf: PathLike):
+    """
+    Setup and run proxy container for grading with internet restrictions
+    """
+    client = docker.from_env()
+    proxy_conf = Path(proxy_conf).resolve()
+    if not proxy_conf.exists():
+        raise FileNotFoundError(f"squid.conf not found at {proxy_conf}")
+    
+    try:
+        client.networks.create("benchmark_net", driver="bridge")
+        logger.info("Created network 'benchmark_net'")
+    except docker.errors.APIError as e:
+        logger.info("{}", str(e))
+    
+    try:
+        proxy = client.containers.get("benchmark-proxy")
+        if proxy.status != "running":
+            proxy.start()
+            logger.info("Started existing Squid proxy")
+        else:
+            logger.info("Squid proxy already running")
+    except docker.errors.NotFound:
+        proxy = client.containers.run(
+            "ubuntu/squid:latest",
+            name="benchmark-proxy",
+            detach=True,
+            network="benchmark_net",
+            volumes={
+                proxy_conf.as_posix(): {
+                    "bind": "/etc/squid/squid.conf",
+                    "mode": "ro"
+                }
+            },
+            restart_policy={"Name": "unless-stopped"}
+        )
+        logger.info("Started new Squid proxy")
+    return proxy
+
+def cleanup_proxy():
+    """Stop proxy container"""
+    client = docker.from_env()
+    try:
+        proxy = client.containers.get("benchmark-proxy")
+        proxy.stop()
+        proxy.remove()
+        logger.info("Cleaned up proxy container")
+    except docker.errors.NotFound:
+        logger.info("Proxy container not found")
+
 
 def run_benchmark(runner_spec: RunnerSpec) -> None:
+    if runner_spec.internet_control == "proxy":
+        setup_proxy(runner_spec.proxy_conf)
     asyncio.run(execute_bench(runner_spec))
+    cleanup_proxy()
+

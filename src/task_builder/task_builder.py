@@ -155,6 +155,8 @@ class TaskContext(BaseModel):
     task_info: TaskDescription
     full_schema: dict[str, Any]
     schema_dict: dict[str, Any]
+    return_type: str
+    return_desc: str
 
 class TaskBuilder:
     def __init__(self, templates_path: str = BASE_TEMPLATE_PATH):
@@ -165,6 +167,8 @@ class TaskBuilder:
         task_context = context.model_dump()
         schema = task_context.get("full_schema")
         schema_dict = task_context.get("schema_dict")
+        return_type = task_context.get("return_type")
+        return_desc = task_context.get("return_desc")
         task_context["full_doc"] = generate_google_args_doc(schema)
         task_context["train_doc"] = generate_google_args_doc(filter_dict_by_suffix(schema, suffix="_val", discard=True))
         task_context["val_doc"] = generate_google_args_doc(filter_dict_by_suffix(schema, suffix="_val", discard=False))
@@ -174,6 +178,9 @@ class TaskBuilder:
         task_context["full_spec"] = arg_ann
         task_context["train_spec"] = filter_dict_by_suffix(arg_ann, suffix="_val", discard=True)
         task_context["val_spec"] = filter_dict_by_suffix(arg_ann, suffix="_val", discard=False)
+
+        task_context["return_type"] = return_type
+        task_context["return_desc"] = return_desc
 
         rendered = self.base_template.render(**task_context)
         return rendered

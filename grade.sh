@@ -54,20 +54,18 @@ if [[ ! -d "./python/submission" ]]; then
     mkdir -p ./python/submission/
 fi
 
-if [[ -d "./python/submission/${SUBMISSION_NAME}" ]]; then
-    echo "Directory exists: ./python/submission/${SUBMISSION_NAME}. Please move or delete old competition files"
-    exit 1
-fi
+
 
 
 echo "" > "./python/submission/$SUBMISSION_NAME/__init__.py"
 
+echo "ALL OK"
 # Copy the submission script
 cp "$SUBMISSION_SCRIPT" "./python/submission/$SUBMISSION_NAME/code.py"
-
+echo "ALL OK"
 # Competition init
 export COMPETITION_ID="$COMPETITION_ID"
-export SUBMISSION_NAME="$SUMBISSION_NAME"
+export SUBMISSION_NAME="$SUBMISSION_NAME"
 export BENCH_LANG="$BENCH_LANG"
 export BENCH_MODE="$BENCH_MODE"
 export BENCH_FOLDS_OVERRIDE="$BENCH_FOLDS_OVERRIDE"
@@ -83,9 +81,11 @@ cat > docker-compose.override.yml << EOF
 services:
   bench_python:
     volumes:
-      - ./python/submission/${SUBMISSION_NAME}/:/home/bench/submission
+      - ./python/submission/${SUBMISSION_NAME}:/home/bench/submission
 EOF
 
+touch "./python/submission/$SUBMISSION_NAME/results.json"
+chmod 666 "./python/submission/$SUBMISSION_NAME/results.json"
 
 # Execute
 docker compose run bench_python
