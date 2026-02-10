@@ -41,6 +41,14 @@ Install `uv` once, then run `uv sync` (or `uv pip install -r requirements.txt`) 
 
    For customization details, see [dataset implementation documentation](/competitions/README.md).
 
+5. Unpack the competition files:
+```bash
+   cd competitions/data
+   chmod +x ./unpack_files.sh
+   ./unpack_files.sh
+```
+   This will extract `.tar.gz` archives with competition files
+
 After completing the preparation steps, you should see the following folder structure:
 ```
 .
