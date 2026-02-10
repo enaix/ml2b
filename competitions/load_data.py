@@ -44,14 +44,15 @@ competition_map = {
 }
 
 DATA_URL = "https://drive.google.com/drive/folders/18QoNa3vjdJouI4bAW6wmGbJQCrWprxyf"
-METADATA_URL = "https://docs.google.com/spreadsheets/d/1ZY8NRI-WZ4RoDK8GpEy_GTSSWVZPxQQthTaySp5jnao/export?format=csv&gid="
+METADATA_URL_OLD = "https://docs.google.com/spreadsheets/d/1ZY8NRI-WZ4RoDK8GpEy_GTSSWVZPxQQthTaySp5jnao/export?format=csv&gid="
+METADATA_URL = "https://docs.google.com/spreadsheets/d/1ehDv0-D_8ZNF5-8tro8-UG2tNeAzuufa0ZKnBUKZbfk/export?format=csv&gid="
 
 HF_DATASET = "enaix/ml2b"
 HF_TASKS_DIR = "tasks"
 HF_DATA_DIR = "data"
 
 
-sheets = {
+sheets_old = {
     "1525338984": "Arab.csv",
     "1607321930": "Belarus.csv",
     "940745352": "Chinese.csv",
@@ -65,6 +66,23 @@ sheets = {
     "0": "Turkish.csv",
     "751010443": "Russian.csv",
     "11714048": "French.csv",
+}
+
+sheets = {
+    "2057446553": "Arab.csv",
+    "1884085989": "Belarus.csv",
+    "95848961": "Chinese.csv",
+    "174127403": "English.csv",
+    "49894994": "Russian.csv",
+    "616859001": "French.csv",
+    "1353870710": "Italian.csv",
+    "1824508920": "Japanese.csv",
+    "74635033": "Kazakh.csv",
+    "207029875": "Polish.csv",
+    "101387807": "Romanian.csv",
+    "1110759639": "Spanish.csv",
+    "1731181829": "Turkish.csv",
+    "156446468": "Ukranian.csv",
 }
 
 
@@ -110,8 +128,8 @@ def load_data_gdrive() -> None:
         except requests.RequestException as e:
             print(f"[ERROR] Failed to download {filename}: {e}")
     add_competition_id_to_all(DEST, competition_map)
-    print(20 * "=" + "Load competitions data" + 20 * "=")
-    gdown.download_folder(DATA_URL, output=str(DEST.parent / "data"), quiet=False, use_cookies=False)
+    #print(20 * "=" + "Load competitions data" + 20 * "=")
+    #gdown.download_folder(DATA_URL, output=str(DEST.parent / "data"), quiet=False, use_cookies=False)
     print("[OK] Benchmark data successfuly prepared")
 
 
