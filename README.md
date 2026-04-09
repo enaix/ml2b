@@ -74,6 +74,14 @@ After completing the preparation steps, you should see the following folder stru
    python ml2b.py bench -i aide -w 3 --agent-dir agents/aide --seed 42 --args-variant extended --code-variant extended
 ```
 
+   By default, the benchmark runs all 14 languages. Use `--lang-choice` to run a subset:
+```bash
+   python ml2b.py bench -i aide -w 3 --agent-dir agents/aide \
+     --lang-choice Russian --lang-choice Kazakh --lang-choice Chinese
+```
+
+   Supported language values: `English`, `Arab`, `Chinese`, `Italian`, `Kazakh`, `Polish`, `Romanian`, `Spanish`, `Turkish`, `Belarus`, `Japanese`, `Russian`, `French`, `Ukranian`.
+
 ### Documentation
 
 General documentation can be found in [docs](docs/)

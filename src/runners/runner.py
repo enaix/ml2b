@@ -50,6 +50,7 @@ class RunnerSpec(BaseModel):
     extended_schema: bool
     internet_control: str
     proxy_conf: Path
+    languages: list[Language] | None = None
 
 class Task(BaseModel):
     idx: int

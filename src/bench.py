@@ -48,7 +48,7 @@ class BenchMode(StrEnum):
 
 class BenchPipeline:
     """Main benchmark pipeline for managing competitions and data"""
-    def __init__(self, basepath: os.PathLike, max_folds: int = 5, prepare_data: bool = False):
+    def __init__(self, basepath: os.PathLike, max_folds: int = 5, prepare_data: bool = False, lang_filter: Optional[list] = None):
         self.basepath = basepath
         self.max_folds = max_folds
         self.current_comp = 0
@@ -56,6 +56,7 @@ class BenchPipeline:
         self.competitions: list[Competition] = []
         self.folds: dict[str, list[CompetitionData]] = {}
         self._languages: list[Language] = []
+        self._lang_filter: Optional[list[Language]] = lang_filter
         self.grader_module = None
         self.prepare_data = prepare_data
 
@@ -90,7 +91,7 @@ class BenchPipeline:
             language_files = os.listdir(tasks_dir)
             self._languages = []
             tasks = {}
-            
+
             for file in language_files:
                 try:
                     lang = Language(file.split('.')[0])
@@ -107,6 +108,13 @@ class BenchPipeline:
             self._languages = [Language.English]
             tasks = {Language.English: []}
             print(f"Note: Tasks directory not found at {tasks_dir}. Using default English setup.")
+
+        if self._lang_filter is not None:
+            unknown = [l for l in self._lang_filter if l not in self._languages]
+            if unknown:
+                print(f"Warning: requested languages not found in tasks: {[str(l) for l in unknown]}")
+            self._languages = [l for l in self._languages if l in self._lang_filter]
+            tasks = {k: v for k, v in tasks.items() if k in self._lang_filter}
         
         # Process each competition
         for key, value in comp_data.items():
