@@ -1,0 +1,200 @@
+{
+    "wids-datathon-2020": {
+        "metric": "roc_auc_score",
+        "target_col": "hospital_death",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "probabilities for class 1 (floats in [0, 1])"
+    },
+    "explicit-content-detection": {
+        "metric": "f1_score",
+        "target_col": "target",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "binary predictions (0 or 1)"
+    },
+    "emnist-handwritten-chars": {
+        "metric": "accuracy_score",
+        "target_col": "labels",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "predicted class labels (integers 0-61)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".npz"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.npz", "type": "data", "required": true}
+        },
+        "split_strategy": "emnist",
+        "load_strategy": "emnist",
+        "grader": "default",
+        "stratified_split": true,
+        "input_shape": [28, 28, 1],
+        "num_classes": 62
+    },
+    "financial-engineering-2": {
+        "metric": "root_mean_squared_error",
+        "target_col": "col_5",
+        "direction": "minimize",
+        "cv_folds": 3,
+        "output_hint": "predicted values for col_5 (floats)",
+        "split_strategy": "csv",
+        "grader": "default"
+    },
+    "ml2021spring-hw1": {
+        "metric": "root_mean_squared_error",
+        "target_col": "tested_positive3",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "output_hint": "predict the probability of an individual testing positive for COVID-19 (floats >= 0)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default",
+        "stratified_split": false
+    },
+    "alfa-university-income-prediction": {
+        "metric": "wmae",
+        "target_col": "target",
+        "exclude_cols": ["w"],
+        "weight_col": "w",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train_clean.csv", "type": "data", "required": true}
+        },
+        "output_hint": "predicted values for target (floats)"
+    },
+    "2024-datalab-cup1": {
+		"metric": "roc_auc_score",
+        "target_col": "Popularity",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "split_strategy": "csv"
+	},
+    "ece460j-fall24": {
+        "metric": "log_loss",
+        "target_col": "Status",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "output_hint": "predict the probability of each of the three Status values (Status_C, Status_CL, and Status_D)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "thapar-summer-school-2025-hack-iii": {
+        "metric": "r2_score",
+        "target_col": "output",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "rutgers-data101-fall2022-assignment-12": {
+        "metric": "root_mean_squared_error",
+        "target_col": "tripduration",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "output_hint": "predicted values for 'tripduration' (floats)",
+        "split_strategy": "csv"
+    },
+    "cs-506-fall-2025-technical-midterm": {
+        "metric": "f1_score_avg_macro",
+        "target_col": "Score",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "car-becho-paisa-paao": {
+        "metric": "root_mean_squared_error",
+        "target_col": "price",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+    "itmo-flat-price-prediction-2024": {
+        "metric": "root_mean_squared_error",
+        "target_col": "price",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default"
+    },
+	"multi-label-classification-competition-2025": {
+	    "metric": "fbeta_score_micro",
+	    "beta": 1.0,
+	    "target_col": "Labels",
+	    "direction": "maximize",
+	    "cv_folds": 1,
+	    "output_hint": "predicted labels per image as whitespace-separated integers (e.g. \"8 3 13\")",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+	    "split_strategy": "photo_classification",
+	    "load_strategy": "photo_classification",
+	    "grader": "photo_classification"
+	},
+    "ift-6390-ift-3395-beer-quality-prediction": {
+        "metric": "accuracy_score",
+        "target_col": "quality",
+        "direction": "maximize",
+        "cv_folds": 3,
+        "output_hint": "predict a quality score (int in [1, 10])",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+		"load_strategy": "default",
+        "grader": "default"
+    }
+}
