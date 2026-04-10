@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# Usage
 usage() {
     echo "Usage: $0 [-r|--rebuild] submission_script competition_id lang bench_mode extended_schema [folds]"
     echo ""
