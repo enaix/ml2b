@@ -98,7 +98,7 @@ async def feed_competitions(bench: BenchPipeline, runner: DockerRunner):
 async def execute_bench(runner_spec: RunnerSpec):
     base_path = Path(__file__).resolve().absolute().parent.parent
     runner = DockerRunner(runner_spec)
-    bench = BenchPipeline(base_path, runner_spec.folds, runner.input_mode == RunnerInput.DescAndData)
+    bench = BenchPipeline(base_path, runner_spec.folds, runner.input_mode == RunnerInput.DescAndData, lang_filter=runner_spec.languages)
     
     feed_task = asyncio.create_task(feed_competitions(bench, runner))
     run_task = asyncio.create_task(runner.run())

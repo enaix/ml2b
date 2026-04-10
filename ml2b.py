@@ -116,15 +116,37 @@ def cli():
     default=DEFAULT_RUNTIME_PATH / "squid.conf",
     help="Path to squid proxy config file, use only if internet-control is proxy",
 )
-def bench(image_name: str, workers: int, data_dir: Path, 
-          runtime_config: Path, log_level: str, logs_dir: Path, 
-          competitions: Path, folds: int, seed: int|None, code_variant: str, 
+@click.option(
+    "--lang-choice",
+    multiple=True,
+    default=["all"],
+    show_default=True,
+    help="Languages to run. Use 'all' or specify language names (e.g. --lang-choice Russian --lang-choice Kazakh --lang-choice Chinese)",
+)
+def bench(image_name: str, workers: int, data_dir: Path,
+          runtime_config: Path, log_level: str, logs_dir: Path,
+          competitions: Path, folds: int, seed: int|None, code_variant: str,
           agent_dir: Path, network: str|None, args_variant: str,
-          internet_control: str, proxy_config: Path
+          internet_control: str, proxy_config: Path, lang_choice: tuple[str, ...]
           ) -> None:
     """
     Run main benchmark pipline
     """
+    from src.runners import RunnerSpec
+    from python.competition import Language
+
+    if "all" in lang_choice:
+        selected_languages = None
+    else:
+        valid_names = {l.value for l in Language}
+        invalid = [l for l in lang_choice if l not in valid_names]
+        if invalid:
+            raise click.BadParameter(
+                f"Unknown language(s): {invalid}. Valid values: {sorted(valid_names)} or 'all'",
+                param_hint="--lang-choice"
+            )
+        selected_languages = [Language(l) for l in lang_choice]
+
     logs_dir = (logs_dir / f"{image_name}-{time.strftime("%Y-%m-%dT%H-%M-%S", time.gmtime())}").resolve()
     runner_spec = RunnerSpec(
         image_name=image_name,
@@ -141,7 +163,8 @@ def bench(image_name: str, workers: int, data_dir: Path,
         network=network,
         extended_schema = (args_variant == "extended"),
         internet_control=internet_control,
-        proxy_conf=proxy_config
+        proxy_conf=proxy_config,
+        languages=selected_languages,
     )
     setup_logger(runner_spec.log_level, runner_spec.logs_dir, file_log_level=runner_spec.log_level)
     logger.info(f"[blue]Run benchmark with runner spec:\n{runner_spec.model_dump_json(indent=2)}[/blue]")

@@ -78,6 +78,21 @@
         "load_strategy": "default",
         "grader": "multitarget"
     },
+    "alfa-university-income-prediction": {
+        "metric": "wmae",
+        "target_col": "target",
+        "exclude_cols": ["w"],
+        "weight_col": "w",
+        "direction": "minimize",
+        "cv_folds": 1,
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train_clean.csv", "type": "data", "required": true}
+        },
+        "output_hint": "predicted values for target (floats)"
+    },
     "biker-tour-recommendation": {
         "metric": "mean_average_precision",
         "target_col": "like",
