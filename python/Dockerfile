@@ -1,5 +1,10 @@
 FROM python:3.12-slim
 
+# -------------------------------------------------------------------
+# WARNING: This dockerfile is used only for manual grading.
+#          See environments/runtime/Dockerfile for a proper runtime.
+# -------------------------------------------------------------------
+
 WORKDIR /home/bench
 RUN apt-get update && apt-get install -y \
     ffmpeg \
@@ -8,6 +13,26 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     git && \
     rm -rf /var/lib/apt/lists/*
+
+# -------------------------------------------------------------------
+# Install R (same as in full runtime, except for postintsall)
+# WARNING: packages installed by the agent are not handled!
+# -------------------------------------------------------------------
+
+RUN apt-get install -y --no-install-recommends \
+    libopenblas0-pthread \
+    littler \
+    r-cran-littler \
+    r-base \
+    r-base-dev \
+    r-base-core \
+    r-recommended \
+    && rm -rf /tmp/downloaded_packages/ /tmp/*.rds \
+    && rm -rf /var/lib/apt/lists/*
+
+# -------------------------------------------------------------------
+# Configure python
+# -------------------------------------------------------------------
 
 RUN useradd -m -U -s /bin/bash bench
 
@@ -33,4 +58,12 @@ ENV PYTHONPATH="/home/bench"
 #RUN touch submission/__init__.py # should be readonly
 RUN mkdir -p submission && chown -R bench:bench submission
 USER bench
+
+# -------------------------------------------------------------------
+# R postinstall
+# -------------------------------------------------------------------
+
+# Since we're executing the grader from the unpriviledged user, we have to make the R library folder
+RUN R -e 'dir.create(Sys.getenv("R_LIBS_USER"), recursive = TRUE)'
+
 CMD [ "python", "python/bench.py" ]

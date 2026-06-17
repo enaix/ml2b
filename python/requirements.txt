@@ -1,3 +1,8 @@
+# -------------------------------------------------------------------
+# WARNING: This file is used only for manual grading.
+#          See environments/runtime/requirements.txt.
+# -------------------------------------------------------------------
+
 #DL LIBRARIES
 keras==3.11.3
 torch==2.8.0 

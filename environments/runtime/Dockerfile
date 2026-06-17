@@ -19,7 +19,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # -------------------------------------------------------------------
-# uv (правильный путь: /root/.local/bin)
+# install R
+# -------------------------------------------------------------------
+
+# Base instructions taken from https://cran.r-project.org/bin/linux/debian/
+# Packages taken from https://github.com/rocker-org/rocker/blob/master/r-base/4.6.0/Dockerfile
+# This installs a whatever version of R
+RUN apt-get install -y --no-install-recommends \
+    libopenblas0-pthread \
+    littler \
+    r-cran-littler \
+    r-base \
+    r-base-dev \
+    r-base-core \
+    r-recommended \
+    && rm -rf /tmp/downloaded_packages/ /tmp/*.rds \
+    && rm -rf /var/lib/apt/lists/*
+
+# We assume that the base library is writable, and the agent is executed from root
+# R-devel is not installed here
+# No cuda support
+
+# -------------------------------------------------------------------
+# uv (correct path: /root/.local/bin)
 # -------------------------------------------------------------------
 ARG PYTHON_VERSION=3.12
 ARG REQUIREMENTS=/tmp/requirements.txt
@@ -36,7 +58,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
  && mv /root/.local/bin/uvx /usr/local/bin/uvx
 
 # -------------------------------------------------------------------
-# pip wrapper для uv
+# pip wrapper for uv
 # -------------------------------------------------------------------
 RUN printf '#!/bin/bash\nexec uv pip "$@"\n' > /usr/local/bin/pip \
  && chmod +x /usr/local/bin/pip \
