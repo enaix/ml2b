@@ -76,3 +76,5 @@ tqdm==4.67.1
 xlrd==2.0.2
 fastapi==0.116.1
 chardet
+rpy2==3.6.7
+juliacall==0.9.35
