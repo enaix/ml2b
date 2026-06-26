@@ -2,7 +2,7 @@
 set -e
 
 usage() {
-    echo "Usage: $0 [-r|--rebuild] submission_script competition_id lang bench_mode extended_schema [folds]"
+    echo "Usage: $0 [-r|--rebuild] submission_script competition_id lang bench_mode extended_schema code_lang [folds]"
     echo ""
     echo "  -r, --rebuild      Rebuild the container before running"
     echo ""
@@ -12,6 +12,7 @@ usage() {
     echo "  lang               Competition language"
     echo "  bench_mode         Benchmarking mode (MONO_PREDICT or MODULAR_PREDICT)"
     echo "  extended_schema    Use extended schema for submission code"
+    echo "  code_lang          Submission code language (\"python\", \"r\" or \"julia\")"
     echo ""
     echo "Optional:"
     echo "  folds              Override the number of folds to run"
@@ -35,18 +36,19 @@ COMPETITION_ID="${POSITIONAL[1]}"
 BENCH_LANG="${POSITIONAL[2]}"
 BENCH_MODE="${POSITIONAL[3]}"
 EXTENDED_SCHEMA="${POSITIONAL[4]}"
+CODE_LANG="${POSITIONAL[5]}"
 
-if [[ ${#POSITIONAL[@]} -gt 5 ]]; then
-	BENCH_FOLDS_OVERRIDE="${POSITIONAL[5]}"
+if [[ ${#POSITIONAL[@]} -gt 6 ]]; then
+	BENCH_FOLDS_OVERRIDE="${POSITIONAL[6]}"
 fi
 
 # Check for required arguments
-if [[ -z $SUBMISSION_SCRIPT || -z $COMPETITION_ID || -z $BENCH_LANG || -z $BENCH_MODE || -z $EXTENDED_SCHEMA ]]; then
+if [[ -z $SUBMISSION_SCRIPT || -z $COMPETITION_ID || -z $BENCH_LANG || -z $BENCH_MODE || -z $EXTENDED_SCHEMA || -z $CODE_LANG ]]; then
     usage
 fi
 
 # Calculate the submission name
-SUBMISSION_NAME="submission_${COMPETITION_ID}-${BENCH_LANG}-python-only_code"
+SUBMISSION_NAME="submission_${COMPETITION_ID}-${BENCH_LANG}-${CODE_LANG}-only_code"
 
 # Prepare the folders
 if [[ ! -d "./python/submission" ]]; then
@@ -55,8 +57,9 @@ fi
 
 
 
-
-echo "" > "./python/submission/$SUBMISSION_NAME/__init__.py"
+if [[ "$CODE_LANG" == "python" ]]; then
+   echo "" > "./python/submission/$SUBMISSION_NAME/__init__.py"
+fi
 
 echo "ALL OK"
 # Copy the submission script
@@ -69,6 +72,7 @@ export BENCH_LANG="$BENCH_LANG"
 export BENCH_MODE="$BENCH_MODE"
 export BENCH_FOLDS_OVERRIDE="$BENCH_FOLDS_OVERRIDE"
 export EXTENDED_SCHEMA="$EXTENDED_SCHEMA"
+export CODE_LANG="$CODE_LANG"
 
 # Rebuild container if requested
 if [[ "$REBUILD" == "true" ]]; then

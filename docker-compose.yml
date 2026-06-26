@@ -16,6 +16,7 @@ services:
       BENCH_MODE: ${BENCH_MODE}
       BENCH_FOLDS_OVERRIDE: ${BENCH_FOLDS_OVERRIDE}
       EXTENDED_SCHEMA: ${EXTENDED_SCHEMA}
+      CODE_LANG: ${CODE_LANG}
 networks:
   python_no_inet:
     driver: bridge

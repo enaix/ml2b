@@ -5,6 +5,15 @@ import os
 import sys
 import json
 import traceback
+from enum import StrEnum
+
+
+
+class CodeLanguage(StrEnum):
+    """Supported programming languages for code generation. Same as in src.bench"""
+    Python = "python"
+    R = "rlang"
+    Julia = "julia"
 
 
 class Results:
