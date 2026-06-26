@@ -19,12 +19,12 @@ from python.splitters import *
 class CodeLanguage(StrEnum):
     """Supported programming languages for code generation"""
     Python = "python"
-    #R = "rlang"
-    #Julia = "julia"
+    R = "rlang"
+    Julia = "julia"
 
 
-CODEPATHS = {CodeLanguage.Python: "code.py",} #CodeLanguage.R: None, CodeLanguage.Julia: None}
-CODE_EXT = {CodeLanguage.Python: ".py"}
+CODEPATHS = {CodeLanguage.Python: "code.py", CodeLanguage.R: "code.r", CodeLanguage.Julia: "code.jl"}
+CODE_EXT = {CodeLanguage.Python: ".py", CodeLanguage.R: ".r", CodeLanguage.Julia: ".jl"}
 
 
 class RunnerInput(StrEnum):
@@ -214,6 +214,13 @@ class BenchPipeline:
         if codelang == CodeLanguage.Python:
             with open(os.path.join(submission_dir, "__init__.py"), 'w') as f:
                 f.write("")
+        elif codelang == CodeLanguage.Julia:
+            with open(os.path.join(submission_dir, "Project.toml", 'w')) as f:
+                f.write("""
+name = \"submission\"
+uuid = \"202b1717-a144-4415-8d3a-a1bfc0cbf60e\"
+version = \"0.0.1\"
+""")  # TODO check that this Project.toml is ok
 
         with open(os.path.join(submission_dir, CODEPATHS[codelang]), 'w') as f:
             f.write(code)
@@ -224,6 +231,7 @@ class BenchPipeline:
             "BENCH_LANG": str(lang),
             "BENCH_MODE": str(BenchMode.ModularPredict),
             "EXTENDED_SCHEMA": str(int(extended_schema)),
+            "CODE_LANG": str(codelang),
             "BENCH_FOLDS_OVERRIDE": "1",
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONPATH": "/home/bench"

@@ -7,6 +7,7 @@ from enum import StrEnum
 
 import python.common as common
 from python.code_grader import grade_llm_code
+from python.foreignlang import *
 import python.ast_parser as ast_parser
 import traceback
 
@@ -18,8 +19,6 @@ class BenchMode(StrEnum):
 
 
 
-# Getting the benchmark name
-# ==========================
 def get_bench_params() -> dict:
     comp_id = os.environ.get("COMPETITION_ID")
     if not comp_id:
@@ -63,9 +62,18 @@ def get_bench_params() -> dict:
         common.report_error("Bad EXTENDED_SCHEMA value: must be one either 1/0 OR y/n OR yes/no OR true/false")
         common.graceful_exit(1)
 
+    code_lang_val = os.environ.get("CODE_LANG")
+    if not code_lang_val:
+        code_lang_val = str(common.CodeLanguage.Python)
+    try:
+        code_lang = common.CodeLanguage(code_lang_val)
+    except ValueError:
+        common.report_error(f"Bad CODE_LANG value: {code_lang_val} must be one of {[x.value for x in common.CodeLanguage]}")
+        common.graceful_exit(1)
+
     submission_name = os.environ.get("SUBMISSION_NAME")
 
-    return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode, "bench_folds": bench_folds, "extended_schema": extended_schema, "submission_name": submission_name}
+    return {"comp_id": comp_id, "bench_lang": bench_lang, "bench_mode": mode, "bench_folds": bench_folds, "extended_schema": extended_schema, "submission_name": submission_name, "code_lang": code_lang}
 
 
 # Loading the submission code
@@ -123,13 +131,23 @@ def main():
     # Init complete
 
     params = get_bench_params()
-    # params["submission_name"] = submission_name
-    if params["bench_mode"] == BenchMode.MonolithicPredict:
-        train_code = load_mono_submission()
-    else:
-        train_code = load_modular_submission()
+    if params["code_lang"] == common.CodeLanguage.Python:
+        if params["bench_mode"] == BenchMode.MonolithicPredict:
+            train_code = load_mono_submission()
+        else:
+            train_code = load_modular_submission()
+    elif params["code_lang"] == common.CodeLanguage.R:
+        if params["bench_mode"] == BenchMode.MonolithicPredict:
+            train_code = load_r_submission_mono()
+        else:
+            train_code = load_r_submission_modular()
+    else: # Julia
+        if params["bench_mode"] == BenchMode.MonolithicPredict:
+            train_code = load_julia_submission_mono()
+        else:
+            train_code = load_julia_submission_modular()
 
-    results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"), params.get("extended_schema"))
+    results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"), params.get("extended_schema"), params["code_lang"])
 
     common.log_results_and_exit(results)
 

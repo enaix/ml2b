@@ -14,6 +14,7 @@ def main():
     parser.add_argument('--mode', '-m', choices=['mono', 'modular'], default='modular',
                        help='Execution mode: mono (monolithic) or modular (default: modular)')
     parser.add_argument('--extended_schema', '-e', choices=['y', 'n'], default='y', help='Use extended schema for submission code')
+    parser.add_argument('--code_lang', '-c', choices=['python', 'rlang', 'julia'], default='python', help='Code language')
     parser.add_argument('--folds', '-f', type=int, help='Override number of folds')
     parser.add_argument('--rebuild', '-r', action='store_true', 
                        help='Rebuild Docker container before running')
@@ -38,21 +39,22 @@ def main():
         sys.exit(1)
     
     pipeline.prepare_train_data(target_comp, args.seed)
-    print("✓ Data preparation complete on host.")
+    print("[OK] Data preparation complete on host.")
 
-    # 1.5 Ensure submission package __init__.py exists for Docker grading
     submission_dir = os.path.join(
-        'python', 'submission', f"submission_{args.competition_id}-{args.lang}-python-only_code"
+        'python', 'submission', f"submission_{args.competition_id}-{args.lang}-{args.code_lang}-only_code"
     )
     os.makedirs(submission_dir, exist_ok=True)
-    init_file = os.path.join(submission_dir, '__init__.py')
-    try:
-        if not os.path.exists(init_file):
-            with open(init_file, 'w', encoding='utf-8') as f:
-                f.write('')
-        print(f"✓ Ensured package file at {init_file}")
-    except Exception as e:
-        print(f"Warning: Could not create __init__.py at {init_file}: {e}")
+    # 1.5 Ensure submission package __init__.py exists for Docker grading
+    if args.code_lang == "python":
+        init_file = os.path.join(submission_dir, '__init__.py')
+        try:
+            if not os.path.exists(init_file):
+                with open(init_file, 'w', encoding='utf-8') as f:
+                    f.write('')
+            print(f"[OK] Ensured package file at {init_file}")
+        except Exception as e:
+            print(f"Warning: Could not create __init__.py at {init_file}: {e}")
 
     # 2. Call the existing grade.sh script to handle Docker
     print("[2/3] Invoking grade.sh to run inside Docker container...")
@@ -63,7 +65,8 @@ def main():
             args.competition_id,
             args.lang,
             'MONO_PREDICT' if args.mode == 'mono' else 'MODULAR_PREDICT',
-            args.extended_schema
+            args.extended_schema,
+            args.code_lang
         ]
         
         if args.rebuild:
@@ -86,7 +89,7 @@ def main():
     # 3. CLEANUP
     print("[3/3] Cleaning up prepared data on host...")
     pipeline.erase_train_data(target_comp)
-    print("✓ Cleanup complete.")
+    print("[OK] Cleanup complete.")
     print("=== Manual test finished ===")
 
 if __name__ == "__main__":
