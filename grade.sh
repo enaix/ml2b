@@ -12,7 +12,7 @@ usage() {
     echo "  lang               Competition language"
     echo "  bench_mode         Benchmarking mode (MONO_PREDICT or MODULAR_PREDICT)"
     echo "  extended_schema    Use extended schema for submission code"
-    echo "  code_lang          Submission code language (\"python\", \"r\" or \"julia\")"
+    echo "  code_lang          Submission code language (\"python\", \"rlang\" or \"julia\")"
     echo ""
     echo "Optional:"
     echo "  folds              Override the number of folds to run"
@@ -60,10 +60,25 @@ fi
 if [[ "$CODE_LANG" == "python" ]]; then
    echo "" > "./python/submission/$SUBMISSION_NAME/__init__.py"
 fi
+if [[ "$CODE_LANG" == "julia" ]]; then
+   cat > "./python/submission/$SUBMISSION_NAME/Project.toml" << EOF   # TODO check that this Project.toml is ok
+name = "submission"
+uuid = "202b1717-a144-4415-8d3a-a1bfc0cbf60e"
+version = "0.0.1"
+EOF
+fi
 
 echo "ALL OK"
 # Copy the submission script
+if [[ "$CODE_LANG" == "python" ]]; then
 cp "$SUBMISSION_SCRIPT" "./python/submission/$SUBMISSION_NAME/code.py"
+fi
+if [[ "$CODE_LANG" == "rlang" ]]; then
+cp "$SUBMISSION_SCRIPT" "./python/submission/$SUBMISSION_NAME/code.r"
+fi
+if [[ "$CODE_LANG" == "python" ]]; then
+cp "$SUBMISSION_SCRIPT" "./python/submission/$SUBMISSION_NAME/code.jl"
+fi
 echo "ALL OK"
 # Competition init
 export COMPETITION_ID="$COMPETITION_ID"

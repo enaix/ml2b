@@ -214,6 +214,13 @@ class BenchPipeline:
         if codelang == CodeLanguage.Python:
             with open(os.path.join(submission_dir, "__init__.py"), 'w') as f:
                 f.write("")
+        elif codelang == CodeLanguage.Julia:
+            with open(os.path.join(submission_dir, "Project.toml", 'w')) as f:
+                f.write("""
+name = \"submission\"
+uuid = \"202b1717-a144-4415-8d3a-a1bfc0cbf60e\"
+version = \"0.0.1\"
+""")  # TODO check that this Project.toml is ok
 
         with open(os.path.join(submission_dir, CODEPATHS[codelang]), 'w') as f:
             f.write(code)

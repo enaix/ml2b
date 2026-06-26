@@ -142,8 +142,10 @@ def main():
         else:
             train_code = load_r_submission_modular()
     else: # Julia
-        common.report_error("Julia code grading is not implemented")
-        common.graceful_exit(1)
+        if params["bench_mode"] == BenchMode.MonolithicPredict:
+            train_code = load_julia_submission_mono()
+        else:
+            train_code = load_julia_submission_modular()
 
     results = grade_llm_code(train_code, params["comp_id"], params["bench_lang"], params["bench_mode"] == BenchMode.MonolithicPredict, params.get("bench_folds"), params.get("extended_schema"), params["code_lang"])
 

@@ -12,14 +12,15 @@ from python.competition import *
 from python.foreignlang import *
 
 
-def evaluate(func: Callable, foreign_args: list, py_args: list, code_lang: common.CodeLanguage) -> Any:
-    """Convert arguments and execute Python/R/Julia code f(*foreign_args, *py_args). Only py_args are converted to the foreign language"""
+def evaluate(func: Callable, foreign_args: list, py_args: list, code_lang: common.CodeLanguage, junk: list[Any]) -> Any:
+    """Convert arguments and execute Python/R/Julia code f(*foreign_args, *py_args). Only py_args are converted to the foreign language. Junk must be deallocated in the end"""
     if code_lang == common.CodeLanguage.Python:
         return func(*foreign_args, *py_args)
     elif code_lang == common.CodeLanguage.R:
         return func(*foreign_args, *[pandas_to_r(arg) for arg in py_args])
     else: # Julia
-        pass
+        junk.append([pandas_to_julia(arg) for arg in py_args])  # make junk the owner
+        return func(*foreign_args, *junk[-1])
 
 def to_pd(output: Any, code_lang: common.CodeLanguage) -> pd.DataFrame:
     """Convert submission output to pd.DataFrame"""
@@ -28,7 +29,12 @@ def to_pd(output: Any, code_lang: common.CodeLanguage) -> pd.DataFrame:
     elif code_lang == common.CodeLanguage.R:
         return r_to_pandas(output)
     else: # Julia
-        pass
+        return julia_to_pandas(output)
+
+def cleanup_data(code_lang: common.CodeLanguage) -> None:
+    """Deallocate data in the end"""
+    if code_lang == common.CodeLanguage.Julia:
+        julia_dealloc_data()
 
 
 def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_predict: bool, folds: int | None, extended_schema: bool, code_lang: common.CodeLanguage) -> dict:
@@ -124,32 +130,36 @@ def grade_llm_code(train_code: dict, competition_id: str, language: str, mono_pr
 
             # Execute the appropriate prediction function
             try:
+                junk: list[Any] = []
                 if mono_predict:
                     if extended_schema and isinstance(train_dataset, dict):
-                        predictions = to_pd(evaluate(train_code["train_and_predict"], [], [*train_dataset.values(), *val_features_dataset.values()], code_lang), code_lang)
+                        predictions = to_pd(evaluate(train_code["train_and_predict"], [], [*train_dataset.values(), *val_features_dataset.values()], code_lang, junk), code_lang)
                     else:
-                        predictions = to_pd(evaluate(train_code["train_and_predict"], [], [train_dataset, val_features_dataset], code_lang), code_lang)
+                        predictions = to_pd(evaluate(train_code["train_and_predict"], [], [train_dataset, val_features_dataset], code_lang, junk), code_lang)
                 else:
                     # Train phase
                     if extended_schema and isinstance(train_dataset, dict):
-                        train_output = evaluate(train_code["train"], [], [*train_dataset.values()], code_lang)
+                        train_output = evaluate(train_code["train"], [], [*train_dataset.values()], code_lang, junk)
                     else:
-                        train_output = evaluate(train_code["train"], [], [train_dataset], code_lang)
+                        train_output = evaluate(train_code["train"], [], [train_dataset], code_lang, junk)
 
                     # Prepare validation phase
                     if extended_schema and isinstance(val_features_dataset, dict):
-                        val_prepared = evaluate(train_code["prepare_val"], [train_output], [*val_features_dataset.values()], code_lang)
+                        val_prepared = evaluate(train_code["prepare_val"], [train_output], [*val_features_dataset.values()], code_lang, junk)
                     else:
-                        val_prepared = evaluate(train_code["prepare_val"], [train_output], [val_features_dataset], code_lang)
+                        val_prepared = evaluate(train_code["prepare_val"], [train_output], [val_features_dataset], code_lang, junk)
 
                     # Predict phase
-                    predictions = to_pd(evaluate(train_code["predict"], [train_output, val_prepared], [], code_lang), code_lang)
+                    predictions = to_pd(evaluate(train_code["predict"], [train_output, val_prepared], [], code_lang, junk), code_lang)
 
                 # Grade the predictions against true labels
                 # common.report_error(f"Grader shapes : pred {predictions.shape}; val_prepared {val_prepared.shape}; val_labels {val_labels.shape}")
                 score = GRADERS[grader](predictions, val_labels, comp.metadata, grader_data)
                 scores.append(score)
                 print(f"grade_llm_code() : finished fold {fold_idx+1}/{folds}")
+
+                del junk
+                cleanup_data(code_lang)
 
             except Exception:
                 common.report_error(f"Error during fold {fold_idx} execution: {traceback.format_exc()}")
