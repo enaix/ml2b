@@ -418,5 +418,33 @@
         "load_strategy": "default",
         "grader": "default",
         "stratified_split": true
+    },
+    "multilingual-health-qa-african": {
+        "metric": "health_qa_weighted_rouge",
+        "target_col": "output",
+        "input_col": "input",
+        "id_col": "ID",
+        "subset_col": "subset",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "generated answer strings in the same language as each input question",
+        "rouge_weights": {
+            "rouge1": 0.37,
+            "rougeL": 0.37,
+            "llm_judge": 0.26
+        },
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]},
+            "val": {"type": "data", "required": true, "extensions": [".csv"]},
+            "test": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "Train.csv", "type": "data", "required": true},
+            "val": {"filename": "Val.csv", "type": "data", "required": true},
+            "test": {"filename": "Test.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "health_qa",
+        "load_strategy": "health_qa",
+        "grader": "health_qa"
     }
 }

@@ -23,6 +23,7 @@ competition_map = {
     "2020-11-20": "financial-engineering-3",
     "cs-4248-fact-checking-2420": "cs-4248-fact-checking-2420",
     "cs-189-hw-5-sp-26": "cs-189-hw-5-sp-26",
+    "multilingual-health-question-answering-in-low-resource-african-languages-challenge": "multilingual-health-qa-african",
 }
 
 

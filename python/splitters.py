@@ -1060,7 +1060,62 @@ class SheepClassificationDataSplitter(DataSplitter):
         pd.DataFrame(val_data[[image_col, target_col]]).to_csv(val_labels_path, index=False)
 
         return train_path, val_path, {}
-    
+
+
+class HealthQADataSplitter(DataSplitter):
+    """Splitter for health QA with pre-defined Train.csv and Val.csv files."""
+
+    def __init__(self, log_error: Any, do_shutdown: Any, grading_stage: bool = False):
+        super().__init__(log_error, do_shutdown, grading_stage)
+
+    def split_data(self, comp: Competition, n_splits: int) -> List[Tuple[np.ndarray, np.ndarray]]:
+        self.prepare_competition_files(comp)
+
+        train_file = comp.get_file("train")
+        val_file = comp.get_file("val")
+        if not train_file or not train_file.exists():
+            raise FileNotFoundError(f"Train file not found for competition {comp.comp_id}")
+        if not val_file or not val_file.exists():
+            raise FileNotFoundError(f"Validation file not found for competition {comp.comp_id}")
+
+        if n_splits != 1:
+            self.log_error(
+                f"Warning: health_qa split only supports 1 fold. Using n_splits=1 instead of {n_splits}"
+            )
+
+        train_df = read_csv_smart(train_file.path)
+        val_df = read_csv_smart(val_file.path)
+        return [(np.arange(len(train_df)), np.arange(len(val_df)))]
+
+    def prepare_fold_data(
+        self,
+        comp: Competition,
+        train_indices: np.ndarray,
+        val_indices: np.ndarray,
+        fold_idx: int,
+        fold_dir: str,
+        private_dir: str,
+    ) -> Tuple[str, str, Dict[str, str]]:
+        train_file = comp.get_file("train")
+        val_file = comp.get_file("val")
+        train_df = read_csv_smart(train_file.path)
+        val_df = read_csv_smart(val_file.path)
+        target_col = comp.metadata["target_col"]
+
+        train_fold = train_df.iloc[train_indices]
+        val_fold = val_df.iloc[val_indices]
+
+        train_path = Path(fold_dir) / f"fold_{fold_idx}"
+        train_path.mkdir(exist_ok=True, parents=True)
+        val_path = Path(private_dir) / f"fold_{fold_idx}"
+        val_path.mkdir(exist_ok=True, parents=True)
+
+        train_fold.to_csv(train_path / "train.csv", index=False)
+        val_fold.drop(columns=[target_col]).to_csv(val_path / "X_val.csv", index=False)
+        val_fold[[target_col]].to_csv(val_path / "y_val.csv", index=False)
+
+        return train_path, val_path, {}
+
 
 # Registry of data splitters
 DATA_SPLITTERS = {
@@ -1075,5 +1130,6 @@ DATA_SPLITTERS = {
     "multilabel": MultilabelDataSplitter,
     "classify_leaves": ClassifyLeavesDataSplitter,
     "photo_classification": PhotoClassificationDataSplitter,
-    "sheep_classification": SheepClassificationDataSplitter
+    "sheep_classification": SheepClassificationDataSplitter,
+    "health_qa": HealthQADataSplitter
 }

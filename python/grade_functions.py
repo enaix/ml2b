@@ -784,6 +784,91 @@ def grader_sheep_classification(pred: pd.DataFrame, val: pd.DataFrame, comp: dic
         return np.nan
 
 
+def _extract_health_qa_predictions(pred: Any) -> list[str]:
+    """Extract generated answer strings from various prediction formats."""
+    if isinstance(pred, pd.DataFrame):
+        for col in ("TargetRLF1", "TargetR1F1", "TargetLLM", "output", "prediction"):
+            if col in pred.columns:
+                return pred[col].astype(str).tolist()
+        if pred.shape[1] >= 1:
+            return pred.iloc[:, 0].astype(str).tolist()
+        return []
+    if isinstance(pred, pd.Series):
+        return pred.astype(str).tolist()
+    if isinstance(pred, (list, tuple, np.ndarray)):
+        return [str(p) for p in pred]
+    return [str(pred)]
+
+
+def _extract_health_qa_references(val: Any) -> list[str]:
+    """Extract reference answer strings from validation labels."""
+    if isinstance(val, pd.DataFrame):
+        for col in ("output", "TargetRLF1", "TargetR1F1", "TargetLLM"):
+            if col in val.columns:
+                return val[col].astype(str).tolist()
+        if val.shape[1] >= 1:
+            return val.iloc[:, 0].astype(str).tolist()
+        return []
+    if isinstance(val, pd.Series):
+        return val.astype(str).tolist()
+    if isinstance(val, (list, tuple, np.ndarray)):
+        return [str(v) for v in val]
+    return [str(val)]
+
+
+def _compute_health_qa_rouge(predictions: list[str], references: list[str]) -> tuple[float, float]:
+    """Compute mean ROUGE-1 and ROUGE-L F1 with whitespace tokenisation."""
+    from rouge_score import rouge_scorer
+
+    scorer = rouge_scorer.RougeScorer(["rouge1", "rougeL"], use_stemmer=False)
+    r1_scores: list[float] = []
+    rl_scores: list[float] = []
+
+    for pred, ref in zip(predictions, references):
+        pred_str = "" if pred in ("nan", "None") else str(pred)
+        ref_str = "" if ref in ("nan", "None") else str(ref)
+        scores = scorer.score(ref_str, pred_str)
+        r1_scores.append(scores["rouge1"].fmeasure)
+        rl_scores.append(scores["rougeL"].fmeasure)
+
+    rouge1 = float(np.mean(r1_scores)) if r1_scores else 0.0
+    rougeL = float(np.mean(rl_scores)) if rl_scores else 0.0
+    return rouge1, rougeL
+
+
+def grader_health_qa(pred: Any, val: Any, comp: dict, extra_data: dict) -> float:
+    """
+    Grader for multilingual health QA using weighted ROUGE-1 and ROUGE-L F1.
+
+    LLM-as-a-Judge is excluded from automated benchmark grading; ROUGE weights
+    are renormalised over the available metrics.
+    """
+    try:
+        predictions = _extract_health_qa_predictions(pred)
+        references = _extract_health_qa_references(val)
+
+        if not predictions or not references:
+            common.report_error("Health QA grader: empty predictions or references")
+            return np.nan
+
+        min_len = min(len(predictions), len(references))
+        predictions = predictions[:min_len]
+        references = references[:min_len]
+
+        rouge1, rougeL = _compute_health_qa_rouge(predictions, references)
+
+        weights = comp.get("rouge_weights", {"rouge1": 0.37, "rougeL": 0.37, "llm_judge": 0.26})
+        rouge_weight = weights.get("rouge1", 0.37) + weights.get("rougeL", 0.37)
+        if rouge_weight <= 0:
+            return np.nan
+
+        score = (weights.get("rouge1", 0.37) * rouge1 + weights.get("rougeL", 0.37) * rougeL) / rouge_weight
+        return float(score)
+    except Exception:
+        common.report_error(f"Health QA grader execution failed : {sys.exc_info()}")
+        return np.nan
+
+
 GRADERS = {
     "default": grader_default,
     "prml_nov2020": grader_prml_nov2020,
@@ -795,6 +880,7 @@ GRADERS = {
     "biker_recommender": grader_biker_recommender,
     "classify_leaves": grader_classify_leaves,
     "photo_classification": grader_photo_classification,
-    "sheep_classification": grader_sheep_classification
+    "sheep_classification": grader_sheep_classification,
+    "health_qa": grader_health_qa
 }
 

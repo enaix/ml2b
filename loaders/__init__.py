@@ -5,6 +5,7 @@ from .biker import BikerRecommenderDataLoader
 from .classify_leaves import ClassifyLeavesDataLoader
 from .photo_classification import PhotoClassificationDataLoader
 from .sheep_classification import SheepClassificationDataLoader
+from .health_qa import HealthQADataLoader
 from .data_loader import DataLoader
 from .utils import read_csv_smart
 
@@ -17,5 +18,6 @@ DATA_LOADERS: dict[str, DataLoader] = {
     "biker_recommender": BikerRecommenderDataLoader,
     "classify_leaves": ClassifyLeavesDataLoader,
     "photo_classification": PhotoClassificationDataLoader,
-    "sheep_classification": SheepClassificationDataLoader
+    "sheep_classification": SheepClassificationDataLoader,
+    "health_qa": HealthQADataLoader
 }
