@@ -399,5 +399,24 @@
         "load_strategy": "default",
         "grader": "default",
         "stratified_split": true
+    },
+    "cs-189-hw-5-sp-26": {
+        "metric": "accuracy_score",
+        "target_col": "prediction",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "predicted answer letters (A, B, C, D, or E)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]},
+            "kaggle_test": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true},
+            "kaggle_test": {"filename": "kaggle_test.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default",
+        "stratified_split": true
     }
 }
