@@ -21,6 +21,7 @@ competition_map = {
     "2020-11-05": "financial-engineering-2",
     "mlolympiadbd2025": "ml-olympiad-bd-2025",
     "2020-11-20": "financial-engineering-3",
+    "cs-4248-fact-checking-2420": "cs-4248-fact-checking-2420",
 }
 
 

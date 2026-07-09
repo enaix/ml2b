@@ -380,5 +380,24 @@
 	    "split_strategy": "photo_classification",
 	    "load_strategy": "photo_classification",
 	    "grader": "photo_classification"
-	}
+	},
+    "cs-4248-fact-checking-2420": {
+        "metric": "f1_score_avg_macro",
+        "target_col": "Verdict",
+        "direction": "maximize",
+        "cv_folds": 1,
+        "output_hint": "predicted verdict labels (-1, 0, or 1)",
+        "files": {
+            "train": {"type": "data", "required": true, "extensions": [".csv"]},
+            "test": {"type": "data", "required": true, "extensions": [".csv"]}
+        },
+        "file_mapping": {
+            "train": {"filename": "train.csv", "type": "data", "required": true},
+            "test": {"filename": "test.csv", "type": "data", "required": true}
+        },
+        "split_strategy": "csv",
+        "load_strategy": "default",
+        "grader": "default",
+        "stratified_split": true
+    }
 }
