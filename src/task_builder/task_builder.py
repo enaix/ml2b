@@ -147,7 +147,7 @@ class TaskDescription(BaseModel):
     datacard: str | None
 
 class TaskContext(BaseModel):
-    code_lang_extention: str
+    code_extention: str
     code_lang: str
     competition_type_code: bool
     competition_type_file: bool

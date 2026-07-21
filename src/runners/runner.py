@@ -268,7 +268,7 @@ class DockerRunner:
             datacard=task.competition.get_data_card(task.lang)
         )
         task_context = TaskContext(
-            code_lang_extention=CODE_EXT[task.codelang],
+            code_extention=CODE_EXT[task.codelang],
             code_lang=task.codelang,
             competition_type_code=(self.output_mode == RunnerOutput.CodeOnly or self.output_mode == RunnerOutput.CodeAndData),
             competition_type_file=(self.output_mode != RunnerOutput.CodeOnly),
